@@ -152,17 +152,20 @@ async function runVerification() {
   }
   recordResult(5, "Logged-out visitors cannot reach any page except auth screens", check5Passed, check5Details);
 
-  if (!SUPABASE_ANON_KEY) {
+  if (!SUPABASE_ANON_KEY || !SUPABASE_URL) {
     console.log("\n[!] Note: NEXT_PUBLIC_SUPABASE_ANON_KEY not set in current shell.");
     console.log("    To run live API assertions against staging, configure .env.local and run `npm run test:1a`.");
     printSummary();
     return;
   }
 
+  const validSupabaseUrl: string = SUPABASE_URL;
+  const validAnonKey: string = SUPABASE_ANON_KEY;
+
   // ----------------------------------------------------------------------------
   // UNPRIVILEGED CLIENT CHECKS (anon client)
   // ----------------------------------------------------------------------------
-  const clientAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const clientAnon = createClient(validSupabaseUrl, validAnonKey);
 
   // Check 4: Public signup attempts are rejected
   let signupRejected = false;
@@ -242,7 +245,7 @@ async function runVerification() {
   // PRIVILEGED TESTS (service_role only)
   // ----------------------------------------------------------------------------
   if (SERVICE_ROLE_KEY) {
-    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const adminClient = createClient(validSupabaseUrl, SERVICE_ROLE_KEY);
 
     // Check 9: Clean Migration & Effective Privileges
     let migrationPassed = false;
