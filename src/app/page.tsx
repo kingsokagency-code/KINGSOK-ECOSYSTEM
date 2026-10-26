@@ -8,9 +8,15 @@ import {
   UtensilsCrossed,
   ArrowRight,
   Sparkles,
-  Compass,
   CheckCircle2,
   Users,
+  User,
+  Award,
+  ClipboardList,
+  Target,
+  Headphones,
+  Compass,
+  Coins,
 } from "lucide-react";
 
 export default function PublicEcosystemHome() {
@@ -20,209 +26,418 @@ export default function PublicEcosystemHome() {
       title: "Accommodation Sector",
       tagline: "Active Operational Portal",
       description:
-        "Field scouting for student lodges, caretaker & president connections, fresher housing support, and area controller operations.",
+        "On-the-ground lodge scouting, caretaker and president intel, vacating final-year & transition student tracking, and dedicated fresher placement.",
       icon: Home,
       status: "active",
       href: "/accommodation",
-      badge: "ACTIVE NOW",
-      metrics: "500 Student Goal • 3 Core Roles • Real-Time Field Log",
-      accent: "from-emerald-700 to-emerald-900",
-      buttonText: "Enter Accommodation Portal",
+      badge: "ACTIVE SECTOR",
+      badgeClass: "bg-emerald-950 text-emerald-300 border-emerald-500/40",
+      accent: "from-emerald-700 to-emerald-950",
+      buttonText: "Enter Accommodation Sector",
+      buttonClass: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md",
+      active: true,
     },
     {
       id: "properties",
       title: "Properties Sector",
       tagline: "Phase 3 Development",
       description:
-        "Land acquisition, site development, structured property investments, and physical estate oversight.",
+        "Strategic land acquisition, structured site development, disciplined property investments, and physical estate oversight.",
       icon: Building2,
       status: "upcoming",
       href: "#",
       badge: "NEXT PHASE",
-      metrics: "Sites & Developments • Inactive",
-      accent: "from-slate-700 to-slate-800",
-      buttonText: "Coming Soon",
+      badgeClass: "bg-neutral-800 text-neutral-400 border-neutral-700",
+      accent: "from-neutral-800 to-neutral-900",
+      buttonText: "Development Pipeline",
+      buttonClass: "bg-neutral-800 text-neutral-500 cursor-not-allowed",
+      active: false,
     },
     {
       id: "rentals",
       title: "Rentals Sector",
       tagline: "Commercial Operations",
       description:
-        "Short-term rentals, commercial halls, equipment leasing, and event logistics across university and town areas.",
+        "Commercial spaces, short-term rentals, event logistics, and heavy equipment leasing across university and municipal territories.",
       icon: KeyRound,
       status: "upcoming",
       href: "#",
-      badge: "UPCOMING",
-      metrics: "Shortlets & Equipment • Inactive",
-      accent: "from-slate-700 to-slate-800",
-      buttonText: "Coming Soon",
+      badge: "UPCOMING PHASE",
+      badgeClass: "bg-neutral-800 text-neutral-400 border-neutral-700",
+      accent: "from-neutral-800 to-neutral-900",
+      buttonText: "Commercial Pipeline",
+      buttonClass: "bg-neutral-800 text-neutral-500 cursor-not-allowed",
+      active: false,
     },
     {
       id: "food",
       title: "Food & Catering Sector",
       tagline: "Nutritional Logistics",
       description:
-        "Reliable daily food delivery, student hostel catering, and event nutritional support.",
+        "Reliable student hostel food supply chains, daily meal plan deliveries, and institutional event catering.",
       icon: UtensilsCrossed,
       status: "upcoming",
       href: "#",
-      badge: "UPCOMING",
-      metrics: "Hostel Meal Plans • Inactive",
-      accent: "from-slate-700 to-slate-800",
-      buttonText: "Coming Soon",
+      badge: "UPCOMING PHASE",
+      badgeClass: "bg-neutral-800 text-neutral-400 border-neutral-700",
+      accent: "from-neutral-800 to-neutral-900",
+      buttonText: "Logistics Pipeline",
+      buttonClass: "bg-neutral-800 text-neutral-500 cursor-not-allowed",
+      active: false,
+    },
+  ];
+
+  const foundationPrinciples = [
+    {
+      number: "01",
+      category: "Foundation Charter",
+      title: "Identity Before Temptation",
+      tagline: "Character Before Convenience",
+      description:
+        "When identity is established before opportunity arrives, shortcuts lose their power. Integrity precedes profit; character guarantees long-term sustainability.",
+    },
+    {
+      number: "02",
+      category: "Foundation Charter",
+      title: "Systems Form Competence",
+      tagline: "Order Over Impulse",
+      description:
+        "Talent without structure decays into confusion. Orderly processes, clear expectations, and daily tracking produce disciplined, repeatable excellence.",
+    },
+    {
+      number: "03",
+      category: "Foundation Charter",
+      title: "Truth Is Not Negotiated",
+      tagline: "Facts Over Comfort",
+      description:
+        "Facts are never distorted for numbers or ease. Full transparency in all field reports and negotiations creates unshakeable institutional trust.",
+    },
+    {
+      number: "04",
+      category: "Operational Standard",
+      title: "Make It Easy for People to Trust You",
+      tagline: "Calm, Reliable Authority",
+      description:
+        "When trust is established through prompt follow-through and calm composure, resistance disappears. Consistency dissolves suspicion.",
+    },
+    {
+      number: "05",
+      category: "Operational Standard",
+      title: "The Client Is the King & Our Employer",
+      tagline: "Sacred Duty of Service",
+      description:
+        "Clients are not mere transactions; they are served with familial care, genuine attention, and relentless protection of their interests.",
+    },
+    {
+      number: "06",
+      category: "Operational Standard",
+      title: "Don't Hide Details. Be Truthful Always",
+      tagline: "Absolute Ground Reality",
+      description:
+        "Never conceal shortcomings. State realities on utilities, pricing, and conditions plainly. Radical honesty builds permanent equity.",
+    },
+  ];
+
+  const operationalSteps = [
+    {
+      step: "01",
+      title: "Clear Daily Role Assignments",
+      desc: "Every worker logs into their assigned workspace and immediately sees clear daily duty targets, zone quotas, and direct leadership directives.",
+      icon: ClipboardList,
+      highlight: "Role-Specific Dispatch",
+    },
+    {
+      step: "02",
+      title: "Structured Field & Client Documentation",
+      desc: "Field agents record verified assets, lodge caretaker details, vacating student intel, and client requests in real time with zero guesswork.",
+      icon: Target,
+      highlight: "Rapid Field Capture",
+    },
+    {
+      step: "03",
+      title: "Cross-Sector Customer Care",
+      desc: "Dedicated Customer Reps register incoming clients, verify field truthfulness, and capture feedback across every active KINGSOK sector.",
+      icon: Headphones,
+      highlight: "Cross-Sector Desk",
+    },
+    {
+      step: "04",
+      title: "Merit & Point-Based Rewards",
+      desc: "Submissions undergo admin review with 1–5 star ratings. Earned performance points translate directly into financial rewards (1 Pt = ₦1,000).",
+      icon: Award,
+      highlight: "1 Pt = ₦1,000 Cash",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Top Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-600 selection:text-white">
+      {/* 1. TOP NAVIGATION BAR */}
+      <header className="bg-neutral-950/95 backdrop-blur-md border-b border-neutral-800 sticky top-0 z-30 shadow-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-kingsok-100 flex items-center justify-center text-kingsok-800 border border-kingsok-200">
-              <Shield className="w-6 h-6 text-kingsok-700" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:border-emerald-400 transition-colors">
+              <Shield className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <span className="font-extrabold text-slate-900 text-base tracking-tight block">
-                KINGSOK APEX ENTERPRISE
+              <span className="font-black text-white text-base tracking-tight block">
+                KINGSOK
               </span>
-              <span className="text-[11px] text-kingsok-700 font-semibold uppercase tracking-wider block -mt-0.5">
-                Workforce & Operational Ecosystem
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest block -mt-0.5">
+                Apex Enterprise
               </span>
             </div>
-          </div>
+          </Link>
 
-          <div className="flex items-center gap-3">
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-neutral-300">
+            <a href="#about" className="hover:text-white transition-colors">
+              About KINGSOK
+            </a>
+            <a href="#principles" className="hover:text-white transition-colors">
+              Core Principles
+            </a>
+            <a href="#operations" className="hover:text-white transition-colors">
+              How We Operate
+            </a>
+            <a href="#sectors" className="hover:text-white transition-colors">
+              Sectors
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-neutral-300 hover:text-white font-semibold text-xs rounded-xl hover:bg-neutral-900 border border-neutral-800 transition-all"
+            >
+              <User className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Staff Login</span>
+            </Link>
             <Link
               href="/accommodation"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-kingsok-700 hover:bg-kingsok-800 text-white font-semibold text-xs rounded-xl shadow-xs transition-all"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
             >
-              <span>Enter Accommodation</span>
+              <span>Enter Portal</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-white to-slate-50 border-b border-slate-200 py-16 sm:py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            KINGSOK Foundation Charter
+      {/* 2. HERO & WHAT KINGSOK IS ALL ABOUT */}
+      <section
+        id="about"
+        className="relative bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 border-b border-neutral-800 py-20 sm:py-24 px-4 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.07] pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto text-center space-y-6 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900 border border-amber-400/40 text-amber-400 text-xs font-black uppercase tracking-widest shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Operational & Workforce Ecosystem
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
             Not Primarily a Business. <br />
-            <span className="text-kingsok-700">A Formation Ground.</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-300 to-amber-300">
+              A Formation Ground.
+            </span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Where hidden potential is called out, weak structures are replaced with inner order, and people are formed to carry real responsibility.
+          <p className="text-base sm:text-lg text-neutral-300 max-w-2xl mx-auto leading-relaxed">
+            Where latent potential is summoned, disorder is systematically replaced with disciplined execution, and people are forged to carry genuine organizational responsibility.
           </p>
 
-          {/* Foundation Anchor Points */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 max-w-3xl mx-auto text-left">
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-kingsok-700 flex-shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <span className="font-bold text-slate-900 block">Identity Before Temptation</span>
-                <span className="text-slate-500">When identity is strong, shortcuts lose authority.</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-kingsok-700 flex-shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <span className="font-bold text-slate-900 block">Systems Form Competence</span>
-                <span className="text-slate-500">Talent without structure decays. Order produces results.</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-kingsok-700 flex-shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <span className="font-bold text-slate-900 block">Truth Is Not Negotiated</span>
-                <span className="text-slate-500">We do not bend principles for comfort or numbers.</span>
-              </div>
-            </div>
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="#sectors"
+              className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-extrabold shadow-md transition-all flex items-center gap-2"
+            >
+              <span>Explore Operational Sectors</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
+            <a
+              href="#principles"
+              className="px-6 py-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 text-xs sm:text-sm font-bold border border-neutral-700 transition-all"
+            >
+              Our Foundation Charter
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Sector Selection Grid */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200 pb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-kingsok-700 uppercase tracking-wider mb-1">
-              <Compass className="w-4 h-4" />
-              <span>Operational Portals</span>
-            </div>
-            <h2 className="text-2xl font-black text-slate-900">
-              Ecosystem Sectors
-            </h2>
+      {/* 3. OUR CORE PRINCIPLES & FOUNDATION CHARTER */}
+      <section
+        id="principles"
+        className="py-16 sm:py-20 px-4 max-w-6xl w-full mx-auto space-y-10 border-b border-neutral-800"
+      >
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 text-xs font-black text-amber-400 uppercase tracking-widest">
+            <Shield className="w-4 h-4" />
+            <span>Foundational Doctrine</span>
           </div>
-          <p className="text-xs text-slate-500 max-w-md">
-            Select a sector portal to view current running goals, operational strategies, or sign in to your worker dashboard.
+          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            KINGSOK Core Principles
+          </h2>
+          <p className="text-xs sm:text-sm text-neutral-400">
+            Unified tenets governing our business conduct, internal workforce development, and operational standards.
           </p>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {foundationPrinciples.map((pr) => (
+            <div
+              key={pr.number}
+              className="bg-neutral-900/90 border border-neutral-800 hover:border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-emerald-950/20 group"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-sm font-black text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md">
+                    {pr.number}
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+                    {pr.category}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-base font-extrabold text-white group-hover:text-emerald-300 transition-colors">
+                    {pr.title}
+                  </h3>
+                  <p className="text-[11px] font-bold text-amber-400/90 mt-0.5">
+                    {pr.tagline}
+                  </p>
+                </div>
+
+                <p className="text-xs text-neutral-300 leading-relaxed pt-1 border-t border-neutral-800/80">
+                  {pr.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. HOW WE OPERATE */}
+      <section
+        id="operations"
+        className="py-16 sm:py-20 px-4 max-w-6xl w-full mx-auto space-y-10 border-b border-neutral-800"
+      >
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-400 uppercase tracking-widest">
+            <Compass className="w-4 h-4" />
+            <span>Operating Architecture</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            How We Operate
+          </h2>
+          <p className="text-xs sm:text-sm text-neutral-400">
+            A structured, gamified workforce pipeline connecting ground-level reconnaissance with verified client fulfillment and financial merit.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {operationalSteps.map((step) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={step.step}
+                className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-5 space-y-3 relative overflow-hidden flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-black text-emerald-400">
+                      STEP {step.step}
+                    </span>
+                    <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center text-emerald-400 border border-neutral-700">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <h3 className="font-bold text-sm text-white">
+                    {step.title}
+                  </h3>
+
+                  <p className="text-xs text-neutral-400 leading-relaxed">
+                    {step.desc}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-neutral-800">
+                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
+                    {step.highlight}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 5. THE KINGSOK SECTORS HUB */}
+      <section id="sectors" className="py-16 sm:py-20 px-4 max-w-6xl w-full mx-auto space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800 pb-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-400 uppercase tracking-widest mb-1">
+              <Compass className="w-4 h-4" />
+              <span>Operational Portals</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white">
+              KINGSOK Sectors Hub
+            </h2>
+          </div>
+          <p className="text-xs text-neutral-400 max-w-md">
+            Dedicated sector operational pipelines. The Accommodation sector is active now with real-time field workflows.
+          </p>
+        </div>
+
+        {/* Sectors Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {sectors.map((sector) => {
             const Icon = sector.icon;
-            const isActive = sector.status === "active";
+            const isActive = sector.active;
 
             return (
               <div
                 key={sector.id}
                 className={`rounded-2xl border transition-all overflow-hidden flex flex-col justify-between ${
                   isActive
-                    ? "bg-white border-emerald-300 shadow-md ring-2 ring-emerald-500/10 hover:border-emerald-500"
-                    : "bg-slate-100/70 border-slate-200/80 opacity-80"
+                    ? "bg-neutral-900 border-emerald-500/50 shadow-lg shadow-emerald-950/20"
+                    : "bg-neutral-900/40 border-neutral-800 opacity-70"
                 }`}
               >
-                <div className="p-6 sm:p-8 space-y-4">
+                <div className="p-6 sm:p-7 space-y-4">
                   <div className="flex items-center justify-between">
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${sector.accent} shadow-sm`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${sector.accent} border border-neutral-700/60 shadow-sm`}
                     >
-                      <Icon className="w-6 h-6" />
+                      <Icon className="w-6 h-6 text-emerald-300" />
                     </div>
 
                     <span
-                      className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full tracking-wider ${
-                        isActive
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
+                      className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider border ${sector.badgeClass}`}
                     >
                       {sector.badge}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">
+                    <h3 className="text-xl font-bold text-white">
                       {sector.title}
                     </h3>
-                    <div className="text-xs font-semibold text-kingsok-700 mt-0.5">
+                    <div className="text-xs font-semibold text-emerald-400 mt-0.5">
                       {sector.tagline}
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <p className="text-xs text-neutral-300 leading-relaxed">
                     {sector.description}
                   </p>
-
-                  <div className="text-xs font-mono text-slate-500 pt-2 border-t border-slate-100">
-                    {sector.metrics}
-                  </div>
                 </div>
 
-                <div className="p-4 sm:px-8 sm:py-5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
+                <div className="p-4 sm:px-7 sm:py-4 bg-neutral-950/70 border-t border-neutral-800 flex items-center justify-between">
                   {isActive ? (
                     <Link
                       href={sector.href}
-                      className="w-full py-2.5 px-4 bg-kingsok-700 hover:bg-kingsok-800 text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
                     >
                       <span>{sector.buttonText}</span>
                       <ArrowRight className="w-4 h-4" />
@@ -230,7 +445,7 @@ export default function PublicEcosystemHome() {
                   ) : (
                     <button
                       disabled
-                      className="w-full py-2.5 px-4 bg-slate-200 text-slate-400 font-semibold text-xs rounded-xl cursor-not-allowed text-center"
+                      className="w-full py-2.5 px-4 bg-neutral-800 text-neutral-500 font-semibold text-xs rounded-xl cursor-not-allowed text-center"
                     >
                       {sector.buttonText}
                     </button>
@@ -241,34 +456,45 @@ export default function PublicEcosystemHome() {
           })}
         </div>
 
-        {/* Quick Help for Workers */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 flex-shrink-0">
-              <Users className="w-5 h-5" />
+        {/* Cross-Sector Customer Rep Desk Banner */}
+        <div className="bg-gradient-to-r from-neutral-900 via-neutral-900 to-neutral-950 rounded-2xl border border-amber-400/40 p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Headphones className="w-6 h-6" />
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">
-                Are you an Area Controller, Hotliner, or Customer Rep?
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-amber-400">
+                <span>Unified Ecosystem Service</span>
+              </div>
+              <h4 className="text-base font-extrabold text-white">
+                Cross-Sector Customer Rep Desk
               </h4>
-              <p className="text-xs text-slate-500">
-                Enter the Accommodation portal to access your field tools, record lodges, track fresher leads, and see your performance points.
+              <p className="text-xs text-neutral-300 max-w-xl leading-relaxed">
+                Customer Reps serve as the client advocacy bridge across all KINGSOK initiatives—registering prospective client details, collecting structured feedback, and safeguarding absolute truthfulness.
               </p>
             </div>
           </div>
 
           <Link
-            href="/accommodation"
-            className="flex-shrink-0 px-4 py-2 text-xs font-bold text-kingsok-800 bg-kingsok-100 hover:bg-kingsok-200 rounded-xl transition-colors"
+            href="/accommodation/customer-rep"
+            className="shrink-0 px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-black text-xs rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
           >
-            Go to Accommodation Portal &rarr;
+            <span>Access Customer Rep Desk</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-      </main>
+      </section>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        <p>KINGSOK Apex Enterprise Ltd &bull; Workforce System v1.3 &bull; All field data audited and protected.</p>
+      {/* 6. FOOTER */}
+      <footer className="bg-neutral-950 border-t border-neutral-800 py-8 text-center text-xs text-neutral-500 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 space-y-2">
+          <p className="font-semibold text-neutral-400">
+            KINGSOK Apex Enterprise Ltd &bull; Workforce System v1.4
+          </p>
+          <p className="text-[11px] text-neutral-600">
+            Operating under the Foundation Charter: Character, Order, and Uncompromising Truth.
+          </p>
+        </div>
       </footer>
     </div>
   );

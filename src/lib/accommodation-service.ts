@@ -49,6 +49,34 @@ export interface Strategy {
   action_steps: string[];
 }
 
+export type StudentIntelType = 'final_year' | 'transition';
+
+export interface StudentIntelRecord {
+  id: string;
+  student_type: StudentIntelType; // 'final_year' (graduating/vacating) | 'transition' (moving to another lodge)
+  student_name: string;
+  phone: string;
+  current_lodge_name: string;
+  area: string;
+  room_number_or_type: string;
+  expected_move_date: string; // e.g., "August 2026" or "Next Session"
+  // Final-Year specific fields:
+  room_opening_up?: boolean;
+  items_for_sale?: string; // e.g., "Bed frame, 6kg gas cylinder, table fridge"
+  // Transition student specific fields:
+  reason_for_moving?: string; // e.g., "Water issue, wants closer to gate"
+  preferred_new_area?: string;
+  target_budget?: string;
+  desired_new_room_type?: string;
+  // Meta & Admin review:
+  notes?: string;
+  recorded_by_id: string;
+  recorded_by_name: string;
+  created_at: string;
+  admin_points_awarded?: number;
+  admin_feedback?: string;
+}
+
 export interface LodgeAsset {
   id: string;
   name: string;
@@ -91,6 +119,7 @@ export interface ClientLead {
   hotliner_name: string;
   created_at: string;
   admin_points_awarded?: number;
+  admin_feedback?: string;
 }
 
 export interface WhatsAppBlastLog {
@@ -102,16 +131,44 @@ export interface WhatsAppBlastLog {
   created_at: string;
 }
 
+export type KingsokSector = 'Accommodation' | 'Properties' | 'Rentals' | 'Food';
+
+export interface RegisteredClientRecord {
+  id: string;
+  sector: KingsokSector;
+  client_name: string;
+  phone: string;
+  whatsapp_phone?: string;
+  email?: string;
+  client_category: string; // e.g., "100L Fresher", "Transition Student", "Final Year", "Property Buyer", "General Client"
+  department_or_occupation?: string;
+  service_or_lodge_acquired: string; // e.g., "Peace Haven Lodge - Room 12" or service name
+  area_or_location: string;
+  amount_paid?: string;
+  payment_status: 'paid_in_full' | 'part_payment' | 'inspection_only' | 'pending';
+  assigned_staff_name?: string; // Controller or Hotliner who handled them
+  emergency_or_parent_contact?: string;
+  notes?: string;
+  registered_by_id: string;
+  registered_by_name: string;
+  created_at: string;
+  admin_points_awarded?: number;
+  admin_feedback?: string;
+}
+
 export interface CustomerRepLog {
   id: string;
-  category: 'Lodge Verification' | 'Fresher Feedback' | 'Issue Resolution' | 'Caretaker Dispute';
+  sector?: KingsokSector;
+  category: 'Lodge Verification' | 'Fresher Feedback' | 'Issue Resolution' | 'Caretaker Dispute' | 'Client Feedback';
   target_reference: string; // e.g. "Peace Haven Lodge" or "Chioma (Fresher)"
   findings: string;
   action_taken: string;
+  satisfaction_rating?: number; // 1 to 5 stars
   status: 'resolved' | 'pending_supervisor';
   rep_name: string;
   created_at: string;
   admin_points_awarded?: number;
+  admin_feedback?: string;
 }
 
 export interface WorkerRatingEvent {
@@ -125,6 +182,53 @@ export interface WorkerRatingEvent {
   coaching_comment: string;
   awarded_by: string;
   created_at: string;
+}
+
+export interface DailyDutyTask {
+  id: string;
+  worker_id: string;
+  worker_name: string;
+  role: WorkerRole;
+  date: string; // YYYY-MM-DD
+  title: string;
+  description: string;
+  target_count: number;
+  completed_count: number;
+  unit_label: string; // e.g. "Lodges", "Contacts", "Applications", "Inspections"
+  is_completed: boolean;
+  assigned_by: "system_ai" | "admin";
+  admin_note?: string;
+  created_at: string;
+}
+
+export interface LodgeAgencyApplication {
+  id: string;
+  lodge_name: string;
+  area: string;
+  caretaker_name: string;
+  caretaker_phone: string;
+  controller_id: string;
+  controller_name: string;
+  commission_terms: string; // e.g. "10% Agency fee, 0 cost to caretaker, 100% vetted students"
+  status: "applied" | "in_discussion" | "accepted" | "declined";
+  notes?: string;
+  created_at: string;
+}
+
+export interface TerritoryZone {
+  id: string;
+  name: string;
+  estimated_total_lodges: number;
+  lodges_scouted: number;
+  vacancies_found: number;
+  agency_agreements_won: number;
+  assigned_controller_name: string;
+}
+
+export interface ClientApproachGuide {
+  title: string;
+  core_rule: string;
+  rules: { title: string; instruction: string; badge: string }[];
 }
 
 // ------------------------------------------------------------------------------
@@ -246,6 +350,17 @@ const SEED_USERS: UserProfile[] = [
     cash_value_earned: 12000,
     rating_average: 4.7,
     joined_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+  },
+  {
+    id: "u-okonkwo",
+    name: "Okonkwo Chukwuma",
+    email: "okonkwo@kingsok.com",
+    phone: "+234 806 777 8899",
+    roles: ["area_controller"],
+    total_points: 30,
+    cash_value_earned: 30000,
+    rating_average: 4.9,
+    joined_at: new Date(Date.now() - 86400000 * 5).toISOString(),
   },
 ];
 
@@ -406,6 +521,288 @@ const SEED_RATINGS: WorkerRatingEvent[] = [
   },
 ];
 
+export const INITIAL_ZONES: TerritoryZone[] = [
+  {
+    id: "zone-hilltop",
+    name: "Hilltop Zone",
+    estimated_total_lodges: 500,
+    lodges_scouted: 74,
+    vacancies_found: 18,
+    agency_agreements_won: 6,
+    assigned_controller_name: "Okonkwo Chukwuma",
+  },
+  {
+    id: "zone-odim",
+    name: "Odim Gate Zone",
+    estimated_total_lodges: 350,
+    lodges_scouted: 48,
+    vacancies_found: 9,
+    agency_agreements_won: 4,
+    assigned_controller_name: "Emeka Obi",
+  },
+  {
+    id: "zone-ofulonu",
+    name: "Ofulonu Zone",
+    estimated_total_lodges: 400,
+    lodges_scouted: 32,
+    vacancies_found: 11,
+    agency_agreements_won: 3,
+    assigned_controller_name: "Okonkwo Chukwuma",
+  },
+  {
+    id: "zone-greenhouse",
+    name: "Green House Zone",
+    estimated_total_lodges: 250,
+    lodges_scouted: 22,
+    vacancies_found: 5,
+    agency_agreements_won: 2,
+    assigned_controller_name: "Emeka Obi",
+  },
+];
+
+export const CLIENT_APPROACH_GUIDE: ClientApproachGuide = {
+  title: "KINGSOK Client Inspection & Approach Etiquette",
+  core_rule: "Never rush, never deceive, never cut corners. Represent KINGSOK with calm authority and absolute truth.",
+  rules: [
+    {
+      title: "1. Prompt & Presentable Arrival",
+      badge: "Punctuality",
+      instruction: "Be at the designated campus meeting point 10 minutes before the student arrives. Dress cleanly and professionally as a trusted KINGSOK representative.",
+    },
+    {
+      title: "2. Warm Dignified Greeting",
+      badge: "Respect",
+      instruction: "Welcome both the fresher and their accompanying parent or guardian with genuine warmth. Address them by name and set them at ease.",
+    },
+    {
+      title: "3. Truthful Pre-Briefing Before Unlocking",
+      badge: "Honesty",
+      instruction: "Before opening the room door, state the ground truth clearly: water reliability, generator frequency, distance to lecture halls, and the exact rent plus caution fees.",
+    },
+    {
+      title: "4. Unrushed Room Inspection",
+      badge: "Patience",
+      instruction: "Give the student and parent ample time to examine the room, bathroom, tap flow, ceiling, and security locks without hovering or applying sales pressure.",
+    },
+    {
+      title: "5. Alternative Offerings If Unsuited",
+      badge: "Care",
+      instruction: "If the room does not feel like home to them, never force it. Immediately offer 2 alternative vetted lodges in your zone to inspect next.",
+    },
+  ],
+};
+
+const SEED_APPLICATIONS: LodgeAgencyApplication[] = [
+  {
+    id: "app-1",
+    lodge_name: "Peace Haven Lodge",
+    area: "Hilltop Phase 1",
+    caretaker_name: "Elder Samuel",
+    caretaker_phone: "+234 803 456 7890",
+    controller_id: "u-okonkwo",
+    controller_name: "Okonkwo Chukwuma",
+    commission_terms: "10% Agency commission, zero upfront fee to landlord, all freshers verified",
+    status: "accepted",
+    notes: "Elder Samuel agreed. KINGSOK is now exclusive agent for the 3 vacant self-contain rooms.",
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: "app-2",
+    lodge_name: "Apex Villa Royale",
+    area: "Odim Gate Area",
+    caretaker_name: "Mr. Boniface",
+    caretaker_phone: "+234 805 987 6543",
+    controller_id: "u-emeka",
+    controller_name: "Emeka Obi",
+    commission_terms: "10% Agency fee, priority listing to incoming fresher database",
+    status: "in_discussion",
+    notes: "Meeting on Saturday to finalize agreement for the 2 upcoming rooms.",
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+  },
+];
+
+const SEED_STUDENT_INTEL: StudentIntelRecord[] = [
+  {
+    id: "intel-fy-1",
+    student_type: "final_year",
+    student_name: "Chinedu Eze",
+    phone: "+234 802 987 6543",
+    current_lodge_name: "Peace Haven Lodge",
+    area: "Hilltop Phase 1",
+    room_number_or_type: "Room 14 (Self-contain)",
+    expected_move_date: "July 2026",
+    room_opening_up: true,
+    items_for_sale: "Haier Thermocool small fridge, 4.5ft Vitafoam mattress, gas cooker + 6kg cylinder, wooden reading table",
+    notes: "Top-floor corner room with good ventilation. Student wants to sell items as a package or separately to incoming fresher.",
+    recorded_by_id: "u-okonkwo",
+    recorded_by_name: "Okonkwo Chukwuma",
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    admin_points_awarded: 2,
+    admin_feedback: "High-value intel. Room secured for incoming fresher intake.",
+  },
+  {
+    id: "intel-fy-2",
+    student_type: "final_year",
+    student_name: "Fatima Abubakar",
+    phone: "+234 813 555 7890",
+    current_lodge_name: "Apex Villa Royale",
+    area: "Odim Gate Area",
+    room_number_or_type: "Block B, Room 4",
+    expected_move_date: "End of Session (August)",
+    room_opening_up: true,
+    items_for_sale: "Executive study desk and swivel chair, rechargeable standing fan, wardrobe rack",
+    notes: "Lodge is 3 mins from campus gate. Caretaker confirmed room can be reserved immediately upon deposit.",
+    recorded_by_id: "u-emeka",
+    recorded_by_name: "Emeka Obi",
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+    admin_points_awarded: 2,
+  },
+  {
+    id: "intel-tr-1",
+    student_type: "transition",
+    student_name: "Somtochukwu Okafor",
+    phone: "+234 703 111 8899",
+    current_lodge_name: "Green Ridge Lodge",
+    area: "Ofulonu Zone",
+    room_number_or_type: "Room 3 (Single Room)",
+    expected_move_date: "Next Session Intake",
+    reason_for_moving: "Water pumping irregularity and distant walking distance to faculty",
+    preferred_new_area: "Hilltop Phase 1",
+    target_budget: "₦260,000 - ₦300,000",
+    desired_new_room_type: "Standard Self-contain with steady borehole water",
+    notes: "Ready to inspect lodges anytime this weekend with an Area Controller.",
+    recorded_by_id: "u-okonkwo",
+    recorded_by_name: "Okonkwo Chukwuma",
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+    admin_points_awarded: 1,
+  },
+  {
+    id: "intel-tr-2",
+    student_type: "transition",
+    student_name: "David Adeleke",
+    phone: "+234 815 444 2211",
+    current_lodge_name: "St. Jude Executive Villa",
+    area: "Hilltop Zone",
+    room_number_or_type: "Flat 2A",
+    expected_move_date: "Immediate (within 2 weeks)",
+    reason_for_moving: "Landlord excessive utility surcharge increase without regular light",
+    preferred_new_area: "Odim Gate Area",
+    target_budget: "₦220,000 - ₦250,000",
+    desired_new_room_type: "Self-contain or 1-bedroom flat",
+    notes: "Has paid advance notice to current caretaker. Wants a verified quiet compound.",
+    recorded_by_id: "u-okonkwo",
+    recorded_by_name: "Okonkwo Chukwuma",
+    created_at: new Date().toISOString(),
+  },
+];
+
+const SEED_REGISTERED_CLIENTS: RegisteredClientRecord[] = [
+  {
+    id: "client-acc-1",
+    sector: "Accommodation",
+    client_name: "Blessing Udoh",
+    phone: "+234 814 555 1234",
+    whatsapp_phone: "+234 814 555 1234",
+    email: "blessing.udoh@uni.edu.ng",
+    client_category: "100L Fresher (Pharmacy)",
+    department_or_occupation: "Faculty of Pharmaceutical Sciences",
+    service_or_lodge_acquired: "Peace Haven Lodge - Room 8",
+    area_or_location: "Hilltop Phase 1",
+    amount_paid: "₦280,000",
+    payment_status: "paid_in_full",
+    assigned_staff_name: "Emeka Obi",
+    emergency_or_parent_contact: "Dr. Udoh (Father) - +234 802 333 4444",
+    notes: "Accommodated with zero stress. Keys received from caretaker Elder Samuel.",
+    registered_by_id: "u-kalu",
+    registered_by_name: "Kalu Eze",
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    admin_points_awarded: 2,
+    admin_feedback: "Fully documented client registration with parent contact verified.",
+  },
+  {
+    id: "client-acc-2",
+    sector: "Accommodation",
+    client_name: "Ibrahim Musa",
+    phone: "+234 809 333 4455",
+    whatsapp_phone: "+234 809 333 4455",
+    email: "ibrahim.m@uni.edu.ng",
+    client_category: "100L Fresher (Computer Science)",
+    department_or_occupation: "Faculty of Physical Sciences",
+    service_or_lodge_acquired: "Apex Villa Royale - Room B2",
+    area_or_location: "Odim Gate Area",
+    amount_paid: "₦350,000",
+    payment_status: "paid_in_full",
+    assigned_staff_name: "Chioma Nwosu",
+    emergency_or_parent_contact: "Alhaji Musa - +234 803 111 9988",
+    notes: "Requires generator connectivity for developer workstation setup.",
+    registered_by_id: "u-kalu",
+    registered_by_name: "Kalu Eze",
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+    admin_points_awarded: 2,
+  },
+  {
+    id: "client-prop-1",
+    sector: "Properties",
+    client_name: "Engr. Kenneth Alabi",
+    phone: "+234 802 777 9900",
+    whatsapp_phone: "+234 802 777 9900",
+    email: "k.alabi@apexconsult.com",
+    client_category: "Property Buyer / Commercial Investor",
+    department_or_occupation: "Civil Engineering Consultant",
+    service_or_lodge_acquired: "Hilltop Commercial Development Plot 4B",
+    area_or_location: "Hilltop Extension Area",
+    amount_paid: "₦4,500,000 (Initial Trench)",
+    payment_status: "part_payment",
+    assigned_staff_name: "Okoye (Admin)",
+    emergency_or_parent_contact: "Barr. Chike (Legal Rep) - +234 803 888 7766",
+    notes: "Site coordinates surveyed. Title documentation in progress.",
+    registered_by_id: "u-kalu",
+    registered_by_name: "Kalu Eze",
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+    admin_points_awarded: 3,
+  },
+  {
+    id: "client-rent-1",
+    sector: "Rentals",
+    client_name: "Campus Gospel Fellowship",
+    phone: "+234 816 444 7788",
+    whatsapp_phone: "+234 816 444 7788",
+    email: "cgf.chapter@gmail.com",
+    client_category: "Institutional / Event Client",
+    department_or_occupation: "Student Union Association",
+    service_or_lodge_acquired: "500-Capacity Canopy, 300 Chairs & Sound System Set",
+    area_or_location: "Main University Gate Pavilion",
+    amount_paid: "₦180,000",
+    payment_status: "paid_in_full",
+    assigned_staff_name: "Kalu Eze",
+    emergency_or_parent_contact: "Bro. Emmanuel (President) - +234 811 222 3344",
+    notes: "Weekend orientation summit logistics setup booked.",
+    registered_by_id: "u-kalu",
+    registered_by_name: "Kalu Eze",
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+  },
+  {
+    id: "client-food-1",
+    sector: "Food",
+    client_name: "Heritage Hostel Students Association",
+    phone: "+234 701 888 3322",
+    whatsapp_phone: "+234 701 888 3322",
+    email: "heritage.hall@uni.edu.ng",
+    client_category: "Hostel Meal Plan Group",
+    department_or_occupation: "Hall Government",
+    service_or_lodge_acquired: "Weekly Dinner Supply & Nutritional Plan (25 Subscribers)",
+    area_or_location: "Ofulonu Zone",
+    amount_paid: "₦150,000",
+    payment_status: "paid_in_full",
+    assigned_staff_name: "Kalu Eze",
+    emergency_or_parent_contact: "Hall Warden Office - +234 805 000 1122",
+    notes: "Delivery starts this Monday at 7:00 PM daily.",
+    registered_by_id: "u-kalu",
+    registered_by_name: "Kalu Eze",
+    created_at: new Date().toISOString(),
+  },
+];
+
 // ------------------------------------------------------------------------------
 // LOCAL STORAGE HELPERS
 // ------------------------------------------------------------------------------
@@ -421,6 +818,11 @@ const KEYS = {
   BLASTS: "kingsok_acc_blasts",
   REP_LOGS: "kingsok_acc_rep_logs",
   RATINGS: "kingsok_acc_ratings",
+  TASKS: "kingsok_acc_tasks",
+  APPLICATIONS: "kingsok_acc_applications",
+  ZONES: "kingsok_acc_zones",
+  STUDENT_INTEL: "kingsok_acc_student_intel",
+  CLIENTS: "kingsok_registered_clients",
 };
 
 function readData<T>(key: string, fallback: T): T {
@@ -563,6 +965,76 @@ export async function createLodge(data: Omit<LodgeAsset, "id" | "created_at">): 
   return newLodge;
 }
 
+export async function updateLodgeAsset(id: string, updates: Partial<LodgeAsset>): Promise<LodgeAsset> {
+  const lodges = await getLodges();
+  const index = lodges.findIndex((l) => l.id === id);
+  if (index === -1) throw new Error("Lodge not found");
+
+  const updatedLodge: LodgeAsset = {
+    ...lodges[index],
+    ...updates,
+  };
+  lodges[index] = updatedLodge;
+  writeData(KEYS.LODGES, lodges);
+  return updatedLodge;
+}
+
+export async function deleteLodgeAsset(id: string): Promise<boolean> {
+  const lodges = await getLodges();
+  const filtered = lodges.filter((l) => l.id !== id);
+  if (filtered.length === lodges.length) return false;
+  writeData(KEYS.LODGES, filtered);
+  return true;
+}
+
+// ------------------------------------------------------------------------------
+// STUDENT INTEL (FINAL-YEAR GRADUATING & TRANSITION STUDENTS)
+// ------------------------------------------------------------------------------
+
+export async function getStudentIntelRecords(): Promise<StudentIntelRecord[]> {
+  return readData<StudentIntelRecord[]>(KEYS.STUDENT_INTEL, SEED_STUDENT_INTEL);
+}
+
+export async function createStudentIntelRecord(
+  data: Omit<StudentIntelRecord, "id" | "created_at">
+): Promise<StudentIntelRecord> {
+  const records = await getStudentIntelRecords();
+  const newRecord: StudentIntelRecord = {
+    ...data,
+    id: "intel-" + Date.now().toString(36),
+    created_at: new Date().toISOString(),
+  };
+  writeData(KEYS.STUDENT_INTEL, [newRecord, ...records]);
+  return newRecord;
+}
+
+export const addStudentIntelRecord = createStudentIntelRecord;
+
+export async function updateStudentIntelRecord(
+  id: string,
+  updates: Partial<StudentIntelRecord>
+): Promise<StudentIntelRecord> {
+  const records = await getStudentIntelRecords();
+  const index = records.findIndex((r) => r.id === id);
+  if (index === -1) throw new Error("Student intel record not found");
+
+  const updated: StudentIntelRecord = {
+    ...records[index],
+    ...updates,
+  };
+  records[index] = updated;
+  writeData(KEYS.STUDENT_INTEL, records);
+  return updated;
+}
+
+export async function deleteStudentIntelRecord(id: string): Promise<boolean> {
+  const records = await getStudentIntelRecords();
+  const filtered = records.filter((r) => r.id !== id);
+  if (filtered.length === records.length) return false;
+  writeData(KEYS.STUDENT_INTEL, filtered);
+  return true;
+}
+
 // Client Leads (Hotliners)
 export async function getClientLeads(): Promise<ClientLead[]> {
   return readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
@@ -596,6 +1068,23 @@ export async function updateLeadStatus(leadId: string, status: ClientLead["statu
   return lead;
 }
 
+export async function updateClientLead(id: string, updates: Partial<ClientLead>): Promise<ClientLead> {
+  const leads = await getClientLeads();
+  const idx = leads.findIndex((l) => l.id === id);
+  if (idx === -1) throw new Error("Lead not found");
+  leads[idx] = { ...leads[idx], ...updates };
+  writeData(KEYS.LEADS, leads);
+  return leads[idx];
+}
+
+export async function deleteClientLead(id: string): Promise<boolean> {
+  const leads = await getClientLeads();
+  const filtered = leads.filter((l) => l.id !== id);
+  if (filtered.length === leads.length) return false;
+  writeData(KEYS.LEADS, filtered);
+  return true;
+}
+
 // Blasts (Hotliners)
 export async function getWhatsAppBlasts(): Promise<WhatsAppBlastLog[]> {
   return readData<WhatsAppBlastLog[]>(KEYS.BLASTS, SEED_BLASTS);
@@ -619,6 +1108,14 @@ export async function recordWhatsAppBlast(data: Omit<WhatsAppBlastLog, "id" | "c
   return newBlast;
 }
 
+export async function deleteWhatsAppBlast(id: string): Promise<boolean> {
+  const blasts = await getWhatsAppBlasts();
+  const filtered = blasts.filter((b) => b.id !== id);
+  if (filtered.length === blasts.length) return false;
+  writeData(KEYS.BLASTS, filtered);
+  return true;
+}
+
 // Customer Rep Logs
 export async function getCustomerRepLogs(): Promise<CustomerRepLog[]> {
   return readData<CustomerRepLog[]>(KEYS.REP_LOGS, SEED_REP_LOGS);
@@ -635,6 +1132,62 @@ export async function createCustomerRepLog(data: Omit<CustomerRepLog, "id" | "cr
   return newLog;
 }
 
+export async function deleteCustomerRepLog(id: string): Promise<boolean> {
+  const logs = await getCustomerRepLogs();
+  const filtered = logs.filter((l) => l.id !== id);
+  if (filtered.length === logs.length) return false;
+  writeData(KEYS.REP_LOGS, filtered);
+  return true;
+}
+
+// ------------------------------------------------------------------------------
+// REGISTERED CLIENT PROFILES (CROSS-SECTOR)
+// ------------------------------------------------------------------------------
+
+export async function getRegisteredClients(): Promise<RegisteredClientRecord[]> {
+  return readData<RegisteredClientRecord[]>(KEYS.CLIENTS, SEED_REGISTERED_CLIENTS);
+}
+
+export async function createRegisteredClient(
+  data: Omit<RegisteredClientRecord, "id" | "created_at">
+): Promise<RegisteredClientRecord> {
+  const clients = await getRegisteredClients();
+  const newClient: RegisteredClientRecord = {
+    ...data,
+    id: "client-" + Date.now().toString(36),
+    created_at: new Date().toISOString(),
+  };
+  writeData(KEYS.CLIENTS, [newClient, ...clients]);
+  return newClient;
+}
+
+export const registerClient = createRegisteredClient;
+
+export async function updateRegisteredClient(
+  id: string,
+  updates: Partial<RegisteredClientRecord>
+): Promise<RegisteredClientRecord> {
+  const clients = await getRegisteredClients();
+  const index = clients.findIndex((c) => c.id === id);
+  if (index === -1) throw new Error("Client not found");
+
+  const updated: RegisteredClientRecord = {
+    ...clients[index],
+    ...updates,
+  };
+  clients[index] = updated;
+  writeData(KEYS.CLIENTS, clients);
+  return updated;
+}
+
+export async function deleteRegisteredClient(id: string): Promise<boolean> {
+  const clients = await getRegisteredClients();
+  const filtered = clients.filter((c) => c.id !== id);
+  if (filtered.length === clients.length) return false;
+  writeData(KEYS.CLIENTS, filtered);
+  return true;
+}
+
 // Rating & Points Engine (Admin Review)
 export async function getWorkerRatings(): Promise<WorkerRatingEvent[]> {
   return readData<WorkerRatingEvent[]>(KEYS.RATINGS, SEED_RATINGS);
@@ -648,7 +1201,7 @@ export async function awardWorkerRatingAndPoints(params: {
   points_awarded: number;
   rating_stars: number;
   coaching_comment: string;
-  submission_type: "lodge" | "lead" | "rep";
+  submission_type: "lodge" | "lead" | "rep" | "student" | "client";
   submission_id: string;
 }): Promise<WorkerRatingEvent> {
   const ratings = await getWorkerRatings();
@@ -694,6 +1247,7 @@ export async function awardWorkerRatingAndPoints(params: {
     const target = leads.find((l) => l.id === params.submission_id);
     if (target) {
       target.admin_points_awarded = params.points_awarded;
+      target.admin_feedback = params.coaching_comment;
       writeData(KEYS.LEADS, leads);
     }
   } else if (params.submission_type === "rep") {
@@ -701,12 +1255,31 @@ export async function awardWorkerRatingAndPoints(params: {
     const target = logs.find((l) => l.id === params.submission_id);
     if (target) {
       target.admin_points_awarded = params.points_awarded;
+      target.admin_feedback = params.coaching_comment;
       writeData(KEYS.REP_LOGS, logs);
+    }
+  } else if (params.submission_type === "student") {
+    const records = await getStudentIntelRecords();
+    const target = records.find((s) => s.id === params.submission_id);
+    if (target) {
+      target.admin_points_awarded = params.points_awarded;
+      target.admin_feedback = params.coaching_comment;
+      writeData(KEYS.STUDENT_INTEL, records);
+    }
+  } else if (params.submission_type === "client") {
+    const clients = await getRegisteredClients();
+    const target = clients.find((c) => c.id === params.submission_id);
+    if (target) {
+      target.admin_points_awarded = params.points_awarded;
+      target.admin_feedback = params.coaching_comment;
+      writeData(KEYS.CLIENTS, clients);
     }
   }
 
   return newRating;
 }
+
+export const awardPointsAndRating = awardWorkerRatingAndPoints;
 
 export async function verifyLodge(lodgeId: string, is_verified: boolean): Promise<LodgeAsset> {
   const lodges = await getLodges();
@@ -725,4 +1298,273 @@ export async function updateCustomerRepLogStatus(logId: string, status: Customer
   writeData(KEYS.REP_LOGS, logs);
   return log;
 }
+
+// ------------------------------------------------------------------------------
+// TERRITORY ZONES & RECON PROGRESS
+// ------------------------------------------------------------------------------
+
+export async function getTerritoryZones(): Promise<TerritoryZone[]> {
+  return readData<TerritoryZone[]>(KEYS.ZONES, INITIAL_ZONES);
+}
+
+export async function getClientApproachGuide(): Promise<ClientApproachGuide> {
+  return CLIENT_APPROACH_GUIDE;
+}
+
+// ------------------------------------------------------------------------------
+// LODGE AGENCY REPRESENTATION APPLICATIONS
+// ------------------------------------------------------------------------------
+
+export async function getLodgeApplications(): Promise<LodgeAgencyApplication[]> {
+  return readData<LodgeAgencyApplication[]>(KEYS.APPLICATIONS, SEED_APPLICATIONS);
+}
+
+export async function createLodgeApplication(
+  data: Omit<LodgeAgencyApplication, "id" | "created_at">
+): Promise<LodgeAgencyApplication> {
+  const list = await getLodgeApplications();
+  const newApp: LodgeAgencyApplication = {
+    ...data,
+    id: "app-" + Date.now().toString(36),
+    created_at: new Date().toISOString(),
+  };
+  writeData(KEYS.APPLICATIONS, [newApp, ...list]);
+  return newApp;
+}
+
+export async function updateLodgeApplicationStatus(
+  appId: string,
+  status: LodgeAgencyApplication["status"]
+): Promise<LodgeAgencyApplication> {
+  const list = await getLodgeApplications();
+  const app = list.find((a) => a.id === appId);
+  if (!app) throw new Error("Application not found");
+  app.status = status;
+  writeData(KEYS.APPLICATIONS, list);
+  return app;
+}
+
+// ------------------------------------------------------------------------------
+// INTELLIGENT DAILY DUTIES & AUTO-PACING ENGINE
+// ------------------------------------------------------------------------------
+
+export function generateSystemDailyQuests(
+  workerId: string,
+  workerName: string,
+  role: WorkerRole
+): DailyDutyTask[] {
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  if (role === "area_controller") {
+    return [
+      {
+        id: `task-${workerId}-scout-${todayStr}`,
+        worker_id: workerId,
+        worker_name: workerName,
+        role: "area_controller",
+        date: todayStr,
+        title: "Daily Territory Recon: Scout 30 Lodges",
+        description:
+          "Target 30 lodges in your designated territory (e.g. Hilltop Phase 1). Check vacancies now, upcoming rooms, water & light reality.",
+        target_count: 30,
+        completed_count: 0,
+        unit_label: "Lodges Visited",
+        is_completed: false,
+        assigned_by: "system_ai",
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: `task-${workerId}-db-${todayStr}`,
+        worker_id: workerId,
+        worker_name: workerName,
+        role: "area_controller",
+        date: todayStr,
+        title: "Lodge Intel Database Capture",
+        description:
+          "Capture Caretaker details, Lodge President contact, and identify graduating final-year students with rooms & household goods to sell.",
+        target_count: 10,
+        completed_count: 0,
+        unit_label: "Lodges Mapped",
+        is_completed: false,
+        assigned_by: "system_ai",
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: `task-${workerId}-agency-${todayStr}`,
+        worker_id: workerId,
+        worker_name: workerName,
+        role: "area_controller",
+        date: todayStr,
+        title: "Submit 2 Lodge Agency Applications",
+        description:
+          "Formally pitch caretakers to sign KINGSOK as their official lodge representation agent to fill their rooms fast.",
+        target_count: 2,
+        completed_count: 0,
+        unit_label: "Applications Sent",
+        is_completed: false,
+        assigned_by: "system_ai",
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: `task-${workerId}-inspect-${todayStr}`,
+        worker_id: workerId,
+        worker_name: workerName,
+        role: "area_controller",
+        date: todayStr,
+        title: "Client Physical Inspection with Truth",
+        description:
+          "Take incoming fresher student leads on honest physical lodge tours, following the KINGSOK Client Approach Etiquette.",
+        target_count: 2,
+        completed_count: 0,
+        unit_label: "Tours Conducted",
+        is_completed: false,
+        assigned_by: "system_ai",
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  if (role === "hotliner") {
+    return [
+      {
+        id: `task-${workerId}-blast-${todayStr}`,
+        worker_id: workerId,
+        worker_name: workerName,
+        role: "hotliner",
+        date: todayStr,
+        title: "WhatsApp Fresher Broadcasts",
+        description:
+          "Send curated vacancy lists to 4 active student groups to reach 1,000+ incoming freshers.",
+        target_count: 4,
+        completed_count: 0,
+        unit_label: "Communities",
+        is_completed: false,
+        assigned_by: "system_ai",
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: `task-${workerId}-inquiry-${todayStr}`,
+        worker_id: workerId,
+        worker_name: workerName,
+        role: "hotliner",
+        date: todayStr,
+        title: "Qualify 15 Fresher Inquiries",
+        description:
+          "Engage incoming students, get budget and room requirements, and book them for physical inspections.",
+        target_count: 15,
+        completed_count: 0,
+        unit_label: "Freshers Qualified",
+        is_completed: false,
+        assigned_by: "system_ai",
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  return [];
+}
+
+export async function getDailyTasks(workerId?: string): Promise<DailyDutyTask[]> {
+  const allTasks = readData<DailyDutyTask[]>(KEYS.TASKS, []);
+  if (workerId) {
+    return allTasks.filter((t) => t.worker_id === workerId);
+  }
+  return allTasks;
+}
+
+export async function getOrGenerateDailyTasks(
+  workerId: string,
+  role: WorkerRole
+): Promise<DailyDutyTask[]> {
+  const users = await getUsers();
+  const worker = users.find((u) => u.id === workerId) || users[0];
+  const allTasks = readData<DailyDutyTask[]>(KEYS.TASKS, []);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const userTodayTasks = allTasks.filter(
+    (t) => t.worker_id === worker.id && t.date === todayStr
+  );
+
+  if (userTodayTasks.length > 0) {
+    return userTodayTasks;
+  }
+
+  // Auto-generate fresh system quests for today
+  const newQuests = generateSystemDailyQuests(worker.id, worker.name, role);
+  const updated = [...newQuests, ...allTasks];
+  writeData(KEYS.TASKS, updated);
+  return newQuests;
+}
+
+export async function incrementTaskProgress(
+  taskId: string,
+  amount: number = 1
+): Promise<DailyDutyTask> {
+  const allTasks = readData<DailyDutyTask[]>(KEYS.TASKS, []);
+  const task = allTasks.find((t) => t.id === taskId);
+  if (!task) throw new Error("Task not found");
+
+  task.completed_count = Math.min(task.target_count, task.completed_count + amount);
+  if (task.completed_count >= task.target_count) {
+    task.is_completed = true;
+  }
+  writeData(KEYS.TASKS, allTasks);
+  return task;
+}
+
+export async function toggleTaskComplete(taskId: string): Promise<DailyDutyTask> {
+  const allTasks = readData<DailyDutyTask[]>(KEYS.TASKS, []);
+  const task = allTasks.find((t) => t.id === taskId);
+  if (!task) throw new Error("Task not found");
+
+  task.is_completed = !task.is_completed;
+  if (task.is_completed) {
+    task.completed_count = task.target_count;
+  }
+  writeData(KEYS.TASKS, allTasks);
+  return task;
+}
+
+export async function assignAdminDuty(params: {
+  worker_id: string;
+  worker_name: string;
+  role: WorkerRole;
+  title: string;
+  description: string;
+  target_count: number;
+  unit_label: string;
+  admin_note?: string;
+}): Promise<DailyDutyTask> {
+  const allTasks = readData<DailyDutyTask[]>(KEYS.TASKS, []);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const newTask: DailyDutyTask = {
+    id: "admin-task-" + Date.now().toString(36),
+    worker_id: params.worker_id,
+    worker_name: params.worker_name,
+    role: params.role,
+    date: todayStr,
+    title: params.title,
+    description: params.description,
+    target_count: params.target_count,
+    completed_count: 0,
+    unit_label: params.unit_label,
+    is_completed: false,
+    assigned_by: "admin",
+    admin_note: params.admin_note || "Direct priority directive from Okoye",
+    created_at: new Date().toISOString(),
+  };
+
+  writeData(KEYS.TASKS, [newTask, ...allTasks]);
+  return newTask;
+}
+
+export async function deleteDailyTask(id: string): Promise<boolean> {
+  const allTasks = readData<DailyDutyTask[]>(KEYS.TASKS, []);
+  const filtered = allTasks.filter((t) => t.id !== id);
+  if (filtered.length === allTasks.length) return false;
+  writeData(KEYS.TASKS, filtered);
+  return true;
+}
+
 

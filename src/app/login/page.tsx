@@ -4,7 +4,20 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Shield, Lock, Mail, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import { switchCurrentUser } from "@/lib/accommodation-service";
+import {
+  Shield,
+  Lock,
+  Mail,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  Building,
+  Radio,
+  Headphones,
+  ShieldAlert,
+} from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -15,6 +28,15 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  const handleQuickLogin = async (userId: string, targetPath: string) => {
+    try {
+      await switchCurrentUser(userId);
+      router.push(targetPath);
+    } catch {
+      router.push(targetPath);
+    }
+  };
 
   useEffect(() => {
     const notice = searchParams.get("notice");
@@ -57,7 +79,7 @@ function LoginForm() {
       }
 
       if (data.user) {
-        router.push("/");
+        router.push("/accommodation");
         router.refresh();
       }
     } catch {
@@ -69,21 +91,105 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md mx-auto p-6 sm:p-8">
+      {/* Back to Ecosystem */}
+      <div className="mb-4">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Ecosystem Portal</span>
+        </Link>
+      </div>
+
       {/* Brand Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-kingsok-100 text-kingsok-800 mb-4 shadow-sm border border-kingsok-200">
-          <Shield className="w-7 h-7 text-kingsok-700" />
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 mb-3 shadow-sm border border-emerald-200">
+          <Shield className="w-7 h-7 text-emerald-700" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           KINGSOK Workforce
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Formation Ground & Operational Management
+        <p className="text-xs text-slate-500 mt-1">
+          Accommodation Sector & Operational System
         </p>
       </div>
 
       {/* Main Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-7">
+        {/* Quick Role Launcher */}
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+              One-Click Role Access
+            </span>
+            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              Instant Entry
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("u-okoye", "/accommodation/admin")}
+              className="p-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white font-bold text-left hover:bg-slate-800 transition-colors cursor-pointer flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-400 font-extrabold text-[10px] uppercase">Admin</span>
+                <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <span className="mt-1 block font-bold text-white text-xs truncate">Okoye</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("u-emeka", "/accommodation/controller")}
+              className="p-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-950 font-bold text-left hover:bg-emerald-100 transition-colors cursor-pointer flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-800 font-extrabold text-[10px] uppercase">Controller</span>
+                <Building className="w-3.5 h-3.5 text-emerald-700" />
+              </div>
+              <span className="mt-1 block font-bold text-slate-900 text-xs truncate">Emeka Obi</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("u-chioma", "/accommodation/hotliner")}
+              className="p-2.5 rounded-xl border border-blue-300 bg-blue-50 text-blue-950 font-bold text-left hover:bg-blue-100 transition-colors cursor-pointer flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-blue-800 font-extrabold text-[10px] uppercase">Hotliner</span>
+                <Radio className="w-3.5 h-3.5 text-blue-700" />
+              </div>
+              <span className="mt-1 block font-bold text-slate-900 text-xs truncate">Chioma Nwosu</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("u-kalu", "/accommodation/customer-rep")}
+              className="p-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-950 font-bold text-left hover:bg-amber-100 transition-colors cursor-pointer flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-amber-800 font-extrabold text-[10px] uppercase">Customer Rep</span>
+                <Headphones className="w-3.5 h-3.5 text-amber-700" />
+              </div>
+              <span className="mt-1 block font-bold text-slate-900 text-xs truncate">Kalu Eze</span>
+            </button>
+          </div>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase">
+              <span className="bg-white px-2 text-slate-400 font-bold tracking-wider">
+                Or Sign In With Email
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Informational Message */}
         {infoMessage && (
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-3 text-emerald-800 text-sm">
@@ -100,7 +206,7 @@ function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email Field */}
           <div>
             <label

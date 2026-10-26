@@ -17,8 +17,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Allowed public auth and recovery callback routes in Task 1A
-  const isAuthRoute =
+  // Allowed public routes: Ecosystem Home, Accommodation sector workspaces, and auth routes
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/accommodation") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/reset-password") ||
@@ -27,9 +29,9 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // If Supabase environment is not yet configured, allow accessing auth pages
+  // If Supabase environment is not yet configured, allow accessing public pages
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (!isAuthRoute) {
+    if (!isPublicRoute) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
     return response;
@@ -59,7 +61,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // If not logged in and requesting a protected route, redirect to /login
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublicRoute) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
