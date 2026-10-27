@@ -156,6 +156,7 @@ export default function ContactsOrganizerPage() {
   // Real Contacts Auto-Load on Mount
   // ----------------------------------------------------------------------------
   useEffect(() => {
+    setIsProcessing(true);
     fetch("/user_contacts.csv")
       .then((res) => {
         if (!res.ok) throw new Error("File not found");
@@ -186,6 +187,9 @@ export default function ContactsOrganizerPage() {
       })
       .catch(() => {
         // Fallback gracefully if user_contacts.csv is not present
+      })
+      .finally(() => {
+        setIsProcessing(false);
       });
   }, []);
 
@@ -445,7 +449,7 @@ export default function ContactsOrganizerPage() {
   // ----------------------------------------------------------------------------
 
   const currentTemplate = useMemo(() => {
-    return templates.find((t) => t.id === selectedTemplateId) || templates[0];
+    return templates.find((t) => t.id === selectedTemplateId) || templates[0] || DEFAULT_TEMPLATES[0];
   }, [templates, selectedTemplateId]);
 
   const previewContact = useMemo(() => {
@@ -454,7 +458,8 @@ export default function ContactsOrganizerPage() {
   }, [allContacts, selectedContactId]);
 
   const personalizedPreview = useMemo(() => {
-    return personalizeMessage(currentTemplate.content, previewContact);
+    if (!currentTemplate) return "";
+    return personalizeMessage(currentTemplate.content || "", previewContact);
   }, [currentTemplate, previewContact]);
 
   const handleCopyPersonalizedMessage = () => {

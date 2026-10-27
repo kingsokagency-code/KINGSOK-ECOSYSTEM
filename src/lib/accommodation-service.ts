@@ -474,6 +474,17 @@ const KEYS = {
   CLIENTS: "kingsok_registered_clients",
 };
 
+export function generateUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function readData<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -593,6 +604,69 @@ export async function getUsers(): Promise<UserProfile[]> {
     okoye.phone = "08103415600";
     writeData(KEYS.USERS, list);
   }
+
+  // Cross-device sync: Fetch staff registrations from Supabase
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("registered_clients")
+        .select("*")
+        .eq("client_category", "Staff Registration");
+
+      if (!error && data && data.length > 0) {
+        let changed = false;
+        for (const row of data) {
+          const existing = list.find(
+            (u) =>
+              u.id === row.id ||
+              u.email.toLowerCase() === (row.email || "").toLowerCase()
+          );
+
+          let meta: any = {};
+          try {
+            meta = row.notes ? JSON.parse(row.notes) : {};
+          } catch {}
+
+          const roleFromDb = (row.service_or_lodge_acquired || meta.role || "area_controller") as WorkerRole;
+          const isApproved = row.payment_status === "approved" || meta.status === "active";
+
+          if (existing) {
+            if (isApproved && (existing.status === "pending_approval" || existing.roles.includes("pending"))) {
+              existing.status = "active";
+              existing.roles = [roleFromDb];
+              changed = true;
+            }
+          } else {
+            const newApplicant: UserProfile = {
+              id: row.id,
+              name: row.client_name,
+              email: row.email || "",
+              phone: row.phone,
+              whatsapp_phone: row.whatsapp_phone || row.phone,
+              zone_preference: row.area_or_location || meta.zone || "Hilltop Zone",
+              desired_role: row.service_or_lodge_acquired || meta.role || "area_controller",
+              roles: isApproved ? [roleFromDb] : ["pending"],
+              status: isApproved ? "active" : "pending_approval",
+              total_points: row.admin_points_awarded || 0,
+              cash_value_earned: (row.admin_points_awarded || 0) * 1000,
+              rating_average: 5.0,
+              joined_at: row.created_at || new Date().toISOString(),
+            };
+            list.push(newApplicant);
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          writeData(KEYS.USERS, list);
+        }
+      }
+    } catch (err) {
+      console.warn("Supabase fetch staff registrations error:", err);
+    }
+  }
+
   return list;
 }
 
@@ -663,8 +737,9 @@ export async function registerStaffApplicant(data: {
     return users[existingIndex];
   }
 
+  const newId = generateUUID();
   const newUser: UserProfile = {
-    id: "u-" + Date.now().toString(36),
+    id: newId,
     name: data.name.trim(),
     email: cleanEmail,
     phone: data.phone.trim(),
@@ -684,6 +759,35 @@ export async function registerStaffApplicant(data: {
   if (typeof window !== "undefined") {
     localStorage.setItem(KEYS.CURRENT_USER, newUser.id);
   }
+
+  // Cross-device sync to Supabase cloud
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("registered_clients").insert([{
+        id: newId,
+        sector: "Accommodation",
+        client_name: newUser.name,
+        phone: newUser.phone,
+        whatsapp_phone: newUser.whatsapp_phone,
+        email: newUser.email,
+        client_category: "Staff Registration",
+        service_or_lodge_acquired: newUser.desired_role,
+        area_or_location: newUser.zone_preference,
+        payment_status: "pending",
+        registered_by_id: newId,
+        registered_by_name: newUser.name,
+        notes: JSON.stringify({
+          role: newUser.desired_role,
+          zone: newUser.zone_preference,
+          status: "pending_approval",
+        }),
+      }]);
+    } catch (err) {
+      console.warn("Supabase staff applicant sync error:", err);
+    }
+  }
+
   return newUser;
 }
 
@@ -782,6 +886,24 @@ export async function assignWorkerRoleAndActivate(
   user.status = "active";
   user.roles = [assignedRole];
   writeData(KEYS.USERS, users);
+
+  // Sync role activation to Supabase
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase
+        .from("registered_clients")
+        .update({
+          payment_status: "approved",
+          service_or_lodge_acquired: assignedRole,
+          notes: JSON.stringify({ role: assignedRole, status: "active" }),
+        })
+        .eq("id", userId);
+    } catch (err) {
+      console.warn("Supabase staff role sync error:", err);
+    }
+  }
+
   return user;
 }
 
@@ -820,7 +942,7 @@ export async function createLodge(data: Omit<LodgeAsset, "id" | "created_at">): 
   const lodges = readData<LodgeAsset[]>(KEYS.LODGES, SEED_LODGES);
   const newLodge: LodgeAsset = {
     ...data,
-    id: "lodge-" + Date.now().toString(36),
+    id: generateUUID(),
     created_at: new Date().toISOString(),
   };
   const updated = [newLodge, ...lodges];
@@ -925,7 +1047,7 @@ export async function createStudentIntelRecord(
   const records = readData<StudentIntelRecord[]>(KEYS.STUDENT_INTEL, SEED_STUDENT_INTEL);
   const newRecord: StudentIntelRecord = {
     ...data,
-    id: "intel-" + Date.now().toString(36),
+    id: generateUUID(),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.STUDENT_INTEL, [newRecord, ...records]);
@@ -1014,7 +1136,7 @@ export async function createClientLead(data: Omit<ClientLead, "id" | "created_at
   const leads = readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
   const newLead: ClientLead = {
     ...data,
-    id: "lead-" + Date.now().toString(36),
+    id: generateUUID(),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.LEADS, [newLead, ...leads]);
@@ -1156,7 +1278,7 @@ export async function createCustomerRepLog(data: Omit<CustomerRepLog, "id" | "cr
   const logs = readData<CustomerRepLog[]>(KEYS.REP_LOGS, SEED_REP_LOGS);
   const newLog: CustomerRepLog = {
     ...data,
-    id: "rep-" + Date.now().toString(36),
+    id: generateUUID(),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.REP_LOGS, [newLog, ...logs]);
@@ -1223,7 +1345,7 @@ export async function createRegisteredClient(
   const clients = readData<RegisteredClientRecord[]>(KEYS.CLIENTS, SEED_REGISTERED_CLIENTS);
   const newClient: RegisteredClientRecord = {
     ...data,
-    id: "client-" + Date.now().toString(36),
+    id: generateUUID(),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.CLIENTS, [newClient, ...clients]);
