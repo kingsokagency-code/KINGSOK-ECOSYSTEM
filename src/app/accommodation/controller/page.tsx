@@ -13,7 +13,6 @@ import {
   updateStudentIntelRecord,
   deleteStudentIntelRecord,
   getCurrentUser,
-  switchCurrentUser,
   getUsers,
   getTerritoryZones,
   getClientApproachGuide,
@@ -22,6 +21,7 @@ import {
   getOrGenerateDailyTasks,
   incrementTaskProgress,
   toggleTaskComplete,
+  NSUKKA_CAMPUS_AREAS,
   LodgeAsset,
   StudentIntelRecord,
   StudentIntelType,
@@ -98,7 +98,7 @@ export default function AreaControllerWorkspace() {
 
   // Lodge Form State
   const [lodgeName, setLodgeName] = useState("");
-  const [area, setArea] = useState("Hilltop Zone");
+  const [area, setArea] = useState("Hilltop");
   const [address, setAddress] = useState("");
   const [caretakerName, setCaretakerName] = useState("");
   const [caretakerPhone, setCaretakerPhone] = useState("");
@@ -121,20 +121,20 @@ export default function AreaControllerWorkspace() {
   const [studentName, setStudentName] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
   const [studentLodgeName, setStudentLodgeName] = useState("");
-  const [studentArea, setStudentArea] = useState("Hilltop Zone");
+  const [studentArea, setStudentArea] = useState("Hilltop");
   const [studentRoomNumber, setStudentRoomNumber] = useState("");
   const [studentExpectedMoveDate, setStudentExpectedMoveDate] = useState("End of Session (July)");
   const [studentRoomOpeningUp, setStudentRoomOpeningUp] = useState(true);
   const [studentItemsForSale, setStudentItemsForSale] = useState("");
   const [studentReasonForMoving, setStudentReasonForMoving] = useState("");
-  const [studentPreferredNewArea, setStudentPreferredNewArea] = useState("Hilltop Zone");
+  const [studentPreferredNewArea, setStudentPreferredNewArea] = useState("Hilltop");
   const [studentTargetBudget, setStudentTargetBudget] = useState("₦250,000 - ₦300,000");
   const [studentDesiredRoomType, setStudentDesiredRoomType] = useState("Self-contain with reliable water");
   const [studentNotes, setStudentNotes] = useState("");
 
   // Agency Application Form State
   const [appLodgeName, setAppLodgeName] = useState("");
-  const [appArea, setAppArea] = useState("Hilltop Zone");
+  const [appArea, setAppArea] = useState("Hilltop");
   const [appCaretakerName, setAppCaretakerName] = useState("");
   const [appCaretakerPhone, setAppCaretakerPhone] = useState("");
   const [appTerms, setAppTerms] = useState("10% Agency commission, 0 upfront cost, 100% verified student intake");
@@ -168,14 +168,6 @@ export default function AreaControllerWorkspace() {
     load();
   }, []);
 
-  const handleUserSwitch = async (userId: string) => {
-    const switched = await switchCurrentUser(userId);
-    setCurrentUser(switched);
-    const tList = await getOrGenerateDailyTasks(switched.id, "area_controller");
-    setTasks(tList);
-    setNotification(`Switched persona to ${switched.name}`);
-  };
-
   // Task Progress Handlers
   const handleIncrementTask = async (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -202,7 +194,7 @@ export default function AreaControllerWorkspace() {
   const handleOpenAddLodge = () => {
     setEditingLodgeId(null);
     setLodgeName("");
-    setArea("Hilltop Zone");
+    setArea("Hilltop");
     setAddress("");
     setCaretakerName("");
     setCaretakerPhone("");
@@ -346,13 +338,13 @@ export default function AreaControllerWorkspace() {
     setStudentName("");
     setStudentPhone("");
     setStudentLodgeName(lodges[0]?.name || "Peace Haven Lodge");
-    setStudentArea(lodges[0]?.area || "Hilltop Zone");
+    setStudentArea(lodges[0]?.area || "Hilltop");
     setStudentRoomNumber("");
     setStudentExpectedMoveDate(type === "final_year" ? "July 2026 (End of Exams)" : "Next Session");
     setStudentRoomOpeningUp(true);
     setStudentItemsForSale("");
     setStudentReasonForMoving("");
-    setStudentPreferredNewArea("Hilltop Zone");
+    setStudentPreferredNewArea("Hilltop");
     setStudentTargetBudget("₦250,000 - ₦300,000");
     setStudentDesiredRoomType("Self-contain with reliable water");
     setStudentNotes("");
@@ -372,7 +364,7 @@ export default function AreaControllerWorkspace() {
     setStudentRoomOpeningUp(record.room_opening_up ?? true);
     setStudentItemsForSale(record.items_for_sale || "");
     setStudentReasonForMoving(record.reason_for_moving || "");
-    setStudentPreferredNewArea(record.preferred_new_area || "Hilltop Zone");
+    setStudentPreferredNewArea(record.preferred_new_area || "Hilltop");
     setStudentTargetBudget(record.target_budget || "₦250,000 - ₦300,000");
     setStudentDesiredRoomType(record.desired_new_room_type || "Self-contain");
     setStudentNotes(record.notes || "");
@@ -531,7 +523,7 @@ export default function AreaControllerWorkspace() {
 
   const completedTasksCount = tasks.filter((t) => t.is_completed).length;
   const taskProgressPct = tasks.length > 0 ? Math.round((completedTasksCount / tasks.length) * 100) : 0;
-  const activeZone = zones.find((z) => z.name === "Hilltop Zone") || zones[0];
+  const activeZone = zones.find((z) => z.name === "Hilltop") || zones[0];
 
   // Dynamic ground-truth counts
   const finalYearCount = students.filter((s) => s.student_type === "final_year").length;
@@ -684,24 +676,14 @@ export default function AreaControllerWorkspace() {
           <div className="mt-6 pt-4 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="text-neutral-400 font-medium">Logged in Controller:</span>
-              <strong className="text-white font-bold">{currentUser?.name || "Okonkwo Chukwuma"}</strong>
-              <span className="text-neutral-400 font-mono">({currentUser?.phone})</span>
+              <strong className="text-white font-bold">{currentUser?.name || "Staff Controller"}</strong>
+              {currentUser?.phone && (
+                <span className="text-neutral-400 font-mono">({currentUser.phone})</span>
+              )}
             </div>
-
-            {/* Persona Switcher for Development & Testing */}
-            <div className="flex items-center gap-2">
-              <span className="text-neutral-400 text-[11px] uppercase font-bold">Switch Controller:</span>
-              <select
-                value={currentUser?.id}
-                onChange={(e) => handleUserSwitch(e.target.value)}
-                className="bg-neutral-950 text-neutral-200 border border-neutral-800 rounded-lg px-2 py-1 text-xs font-semibold outline-none"
-              >
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} ({u.roles.join(", ")})
-                  </option>
-                ))}
-              </select>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Assigned Field Terminal</span>
             </div>
           </div>
         </div>
@@ -1511,10 +1493,11 @@ export default function AreaControllerWorkspace() {
                       onChange={(e) => setArea(e.target.value)}
                       className="w-full p-2.5 bg-neutral-950 border border-neutral-800 rounded-xl focus:border-emerald-500 outline-none font-semibold text-white"
                     >
-                      <option value="Hilltop Zone">Hilltop Zone</option>
-                      <option value="Odim Gate Area">Odim Gate Area</option>
-                      <option value="Ofulonu Zone">Ofulonu Zone</option>
-                      <option value="Green House Zone">Green House Zone</option>
+                      {NSUKKA_CAMPUS_AREAS.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1868,10 +1851,11 @@ export default function AreaControllerWorkspace() {
                       onChange={(e) => setStudentArea(e.target.value)}
                       className="w-full p-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white focus:border-amber-400 outline-none"
                     >
-                      <option value="Hilltop Zone">Hilltop Zone</option>
-                      <option value="Odim Gate Area">Odim Gate Area</option>
-                      <option value="Ofulonu Zone">Ofulonu Zone</option>
-                      <option value="Green House Zone">Green House Zone</option>
+                      {NSUKKA_CAMPUS_AREAS.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1959,10 +1943,11 @@ export default function AreaControllerWorkspace() {
                           onChange={(e) => setStudentPreferredNewArea(e.target.value)}
                           className="w-full p-2 bg-neutral-950 border border-blue-500/40 rounded-lg text-white font-semibold"
                         >
-                          <option value="Hilltop Zone">Hilltop Zone</option>
-                          <option value="Odim Gate Area">Odim Gate Area</option>
-                          <option value="Ofulonu Zone">Ofulonu Zone</option>
-                          <option value="Green House Zone">Green House Zone</option>
+                          {NSUKKA_CAMPUS_AREAS.map((a) => (
+                            <option key={a} value={a}>
+                              {a}
+                            </option>
+                          ))}
                         </select>
                       </div>
 

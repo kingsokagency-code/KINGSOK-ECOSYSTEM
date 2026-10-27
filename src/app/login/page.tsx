@@ -10,6 +10,7 @@ import {
   registerStaffApplicant,
   verifyAndLoginAdmin,
   verifyAndLoginStaff,
+  NSUKKA_CAMPUS_AREAS,
   WorkerRole,
 } from "@/lib/accommodation-service";
 import {
@@ -46,7 +47,7 @@ function LoginForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsappPhone, setWhatsappPhone] = useState("");
-  const [zonePreference, setZonePreference] = useState("Hilltop Zone");
+  const [zonePreference, setZonePreference] = useState("Hilltop");
   const [desiredRole, setDesiredRole] = useState("area_controller");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -570,10 +571,11 @@ function LoginForm() {
                   onChange={(e) => setZonePreference(e.target.value)}
                   className="w-full px-2.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
                 >
-                  <option value="Hilltop Zone">Hilltop Zone</option>
-                  <option value="Odim Gate Zone">Odim Gate Zone</option>
-                  <option value="Ofulonu Zone">Ofulonu Zone</option>
-                  <option value="Green House Zone">Green House Zone</option>
+                  {NSUKKA_CAMPUS_AREAS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

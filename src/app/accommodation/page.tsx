@@ -7,7 +7,6 @@ import {
   getCampaignGoal,
   getUsers,
   getCurrentUser,
-  switchCurrentUser,
   logoutCurrentUser,
   CampaignGoal,
   UserProfile,
@@ -44,11 +43,6 @@ export default function AccommodationPortalHome() {
     }
     loadData();
   }, []);
-
-  const handleUserSwitch = async (userId: string) => {
-    const updated = await switchCurrentUser(userId);
-    setCurrentUser(updated);
-  };
 
   const hasRole = (role: string) => {
     if (!currentUser) return false;
@@ -193,7 +187,7 @@ export default function AccommodationPortalHome() {
                   <span>Welcome to the KINGSOK Ecosystem & Workforce</span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                  Your staff profile has been registered in the system. The Executive Office (Admin Okoye) has been notified to verify your account and assign your official operational role (<strong>{currentUser.desired_role ? currentUser.desired_role.replace("_", " ") : "Area Controller"}</strong>) and territory (<strong>{currentUser.zone_preference || "Hilltop Zone"}</strong>).
+                  Your staff profile has been registered in the system. The Executive Office (Admin Okoye) has been notified to verify your account and assign your official operational role (<strong>{currentUser.desired_role ? currentUser.desired_role.replace("_", " ") : "Area Controller"}</strong>) and territory (<strong>{currentUser.zone_preference || "Hilltop"}</strong>).
                 </p>
                 <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
                   <a

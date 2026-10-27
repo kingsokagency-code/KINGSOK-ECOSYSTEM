@@ -13,6 +13,7 @@ import {
   recordWhatsAppBlast,
   deleteWhatsAppBlast,
   getCurrentUser,
+  NSUKKA_CAMPUS_AREAS,
   ClientLead,
   WhatsAppBlastLog,
   UserProfile,
@@ -60,7 +61,7 @@ export default function HotlinerWorkspace() {
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
   const [fresherName, setFresherName] = useState("");
   const [fresherPhone, setFresherPhone] = useState("");
-  const [preferredArea, setPreferredArea] = useState("Hilltop Phase 1");
+  const [preferredArea, setPreferredArea] = useState("Hilltop");
   const [budgetRange, setBudgetRange] = useState("₦200k - ₦300k");
   const [desiredRoomType, setDesiredRoomType] = useState("Self-contain");
   const [leadStatus, setLeadStatus] = useState<ClientLead["status"]>("new_inquiry");
@@ -97,7 +98,7 @@ export default function HotlinerWorkspace() {
     setEditingLeadId(null);
     setFresherName("");
     setFresherPhone("");
-    setPreferredArea("Hilltop Phase 1");
+    setPreferredArea("Hilltop");
     setBudgetRange("₦200k - ₦300k");
     setDesiredRoomType("Self-contain");
     setLeadStatus("new_inquiry");
@@ -490,7 +491,7 @@ export default function HotlinerWorkspace() {
                 Rapid 5-Minute Inbound Triage
               </span>
               <p className="text-neutral-400 leading-relaxed text-[11px]">
-                Respond promptly to inquiries. Qualify exact budget, zone preference (Hilltop, Odim, Ofulonu), and room type before sending options.
+                Respond promptly to inquiries. Qualify exact budget, zone preference (Hilltop, Odim, Vet Odim, Odenigwe, Behind Flat...), and room type before sending options.
               </p>
             </div>
 
@@ -592,11 +593,11 @@ export default function HotlinerWorkspace() {
                   className="px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-200 outline-none focus:border-emerald-500"
                 >
                   <option value="all">All Campus Zones</option>
-                  <option value="Hilltop Phase 1">Hilltop Phase 1</option>
-                  <option value="Hilltop Phase 2">Hilltop Phase 2</option>
-                  <option value="Odim Gate Area">Odim Gate Area</option>
-                  <option value="Ofulonu Zone">Ofulonu Zone</option>
-                  <option value="Behind Flat">Behind Flat</option>
+                  {NSUKKA_CAMPUS_AREAS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
                 </select>
 
                 <button
@@ -861,7 +862,7 @@ export default function HotlinerWorkspace() {
                     <br /><br />
                     To recommend the best available rooms for you:
                     <br />1. What is your budget range (e.g. ₦200k - ₦300k)?
-                    <br />2. Which campus zone do you prefer (Hilltop, Odim Gate, or Ofulonu)?
+                    <br />2. Which campus zone do you prefer (Hilltop, Odim, Vet Odim, Odenigwe, Behind Flat...)?
                     <br />3. What room type are you looking for (Self-contain or Single)?&quot;
                   </p>
                 </div>
@@ -870,7 +871,7 @@ export default function HotlinerWorkspace() {
                   onClick={() =>
                     copyToClipboard(
                       "script-1",
-                      `Hello! Warm welcome to the campus community. This is ${currentUser?.name || "Hotliner"} from KINGSOK Accommodation. We help students secure verified, safe, and transparent lodge accommodations with zero hidden charges.\n\nTo recommend the best available rooms for you:\n1. What is your budget range (e.g. ₦200k - ₦300k)?\n2. Which campus zone do you prefer (Hilltop, Odim Gate, or Ofulonu)?\n3. What room type are you looking for (Self-contain or Single)?`
+                      `Hello! Warm welcome to the campus community. This is ${currentUser?.name || "Hotliner"} from KINGSOK Accommodation. We help students secure verified, safe, and transparent lodge accommodations with zero hidden charges.\n\nTo recommend the best available rooms for you:\n1. What is your budget range (e.g. ₦200k - ₦300k)?\n2. Which campus zone do you prefer (Hilltop, Odim, Vet Odim, Odenigwe, Behind Flat...)?\n3. What room type are you looking for (Self-contain or Single)?`
                     )
                   }
                   className="w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-neutral-700"
@@ -905,7 +906,7 @@ export default function HotlinerWorkspace() {
                     &quot;Here is a verified room matching your budget right now:
                     <br /><br />
                     • Lodge: Peace Haven Lodge
-                    <br />• Location: Hilltop Phase 1 (7 mins walk to gate)
+                    <br />• Location: Hilltop (7 mins walk to gate)
                     <br />• Room Type: Modern Self-contain
                     <br />• Annual Rent: ₦240,000 (Total package verified)
                     <br />• Ground Truth: Water is constant via solar borehole; light is stable on the university line; fence and gate lock at 10 PM.
@@ -918,7 +919,7 @@ export default function HotlinerWorkspace() {
                   onClick={() =>
                     copyToClipboard(
                       "script-2",
-                      `Here is a verified room matching your budget right now:\n\n• Lodge: Peace Haven Lodge\n• Location: Hilltop Phase 1 (7 mins walk to gate)\n• Room Type: Modern Self-contain\n• Annual Rent: ₦240,000 (Total package verified)\n• Ground Truth: Water is constant via solar borehole; light is stable on the university line; fence and gate lock at 10 PM.\n\nWould you like our on-ground Area Controller to take you for a physical inspection?`
+                      `Here is a verified room matching your budget right now:\n\n• Lodge: Peace Haven Lodge\n• Location: Hilltop (7 mins walk to gate)\n• Room Type: Modern Self-contain\n• Annual Rent: ₦240,000 (Total package verified)\n• Ground Truth: Water is constant via solar borehole; light is stable on the university line; fence and gate lock at 10 PM.\n\nWould you like our on-ground Area Controller to take you for a physical inspection?`
                     )
                   }
                   className="w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-neutral-700"
@@ -950,9 +951,9 @@ export default function HotlinerWorkspace() {
                     Area Controller Inspection Handoff
                   </h4>
                   <p className="text-xs text-neutral-300 bg-neutral-950 p-3 rounded-xl border border-neutral-800 leading-relaxed font-sans">
-                    &quot;Great! Our Area Controller on ground is Okonkwo Chukwuma (+234 803 234 5678).
+                    &quot;Great! Our on-ground Area Controller is ready for your inspection.
                     <br /><br />
-                    They are currently stationed in Hilltop Zone and will meet you at the campus gate, take you directly to the lodge, and inspect the room, water tap, and light points with you.
+                    They will meet you at the campus gate, take you directly to the lodge, and inspect the room, water tap, and light points with you.
                     <br /><br />
                     Please send them a message or call them when you are heading out so they can be waiting for you.&quot;
                   </p>
@@ -962,7 +963,7 @@ export default function HotlinerWorkspace() {
                   onClick={() =>
                     copyToClipboard(
                       "script-3",
-                      `Great! Our Area Controller on ground is Okonkwo Chukwuma (+234 803 234 5678).\n\nThey are currently stationed in Hilltop Zone and will meet you at the campus gate, take you directly to the lodge, and inspect the room, water tap, and light points with you.\n\nPlease send them a message or call them when you are heading out so they can be waiting for you.`
+                      `Great! Our on-ground Area Controller is ready for your inspection.\n\nThey will meet you at the campus gate, take you directly to the lodge, and inspect the room, water tap, and light points with you.\n\nPlease send them a message or call them when you are heading out so they can be waiting for you.`
                     )
                   }
                   className="w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-neutral-700"
@@ -1044,11 +1045,11 @@ export default function HotlinerWorkspace() {
                       onChange={(e) => setPreferredArea(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white outline-none focus:border-emerald-500"
                     >
-                      <option value="Hilltop Phase 1">Hilltop Phase 1</option>
-                      <option value="Hilltop Phase 2">Hilltop Phase 2</option>
-                      <option value="Odim Gate Area">Odim Gate Area</option>
-                      <option value="Ofulonu Zone">Ofulonu Zone</option>
-                      <option value="Behind Flat">Behind Flat</option>
+                      {NSUKKA_CAMPUS_AREAS.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
                     </select>
                   </div>
 

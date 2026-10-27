@@ -313,6 +313,19 @@ export const INITIAL_STRATEGIES: Strategy[] = [
   },
 ];
 
+export const NSUKKA_CAMPUS_AREAS = [
+  "Hilltop",
+  "Odim",
+  "Vet Odim",
+  "Odenigwe",
+  "Behind Flat",
+  "Staff Quarters",
+  "Green House",
+  "Beach",
+] as const;
+
+export type NsukkaCampusArea = typeof NSUKKA_CAMPUS_AREAS[number];
+
 const SEED_USERS: UserProfile[] = [
   {
     id: "u-okoye",
@@ -325,50 +338,6 @@ const SEED_USERS: UserProfile[] = [
     rating_average: 5.0,
     joined_at: new Date(Date.now() - 86400000 * 30).toISOString(),
   },
-  {
-    id: "u-emeka",
-    name: "Emeka Obi",
-    email: "emeka@kingsok.com",
-    phone: "+234 803 111 2233",
-    roles: ["area_controller", "hotliner"], // Multi-role!
-    total_points: 0,
-    cash_value_earned: 0,
-    rating_average: 5.0,
-    joined_at: new Date(Date.now() - 86400000 * 14).toISOString(),
-  },
-  {
-    id: "u-chioma",
-    name: "Chioma Nwosu",
-    email: "chioma@kingsok.com",
-    phone: "+234 814 222 3344",
-    roles: ["hotliner"],
-    total_points: 0,
-    cash_value_earned: 0,
-    rating_average: 5.0,
-    joined_at: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-  {
-    id: "u-kalu",
-    name: "Kalu Eze",
-    email: "kalu@kingsok.com",
-    phone: "+234 705 333 4455",
-    roles: ["customer_rep"],
-    total_points: 0,
-    cash_value_earned: 0,
-    rating_average: 5.0,
-    joined_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-  },
-  {
-    id: "u-okonkwo",
-    name: "Okonkwo Chukwuma",
-    email: "okonkwo@kingsok.com",
-    phone: "+234 806 777 8899",
-    roles: ["area_controller"],
-    total_points: 0,
-    cash_value_earned: 0,
-    rating_average: 5.0,
-    joined_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
 ];
 
 const SEED_LODGES: LodgeAsset[] = [];
@@ -380,39 +349,75 @@ const SEED_RATINGS: WorkerRatingEvent[] = [];
 export const INITIAL_ZONES: TerritoryZone[] = [
   {
     id: "zone-hilltop",
-    name: "Hilltop Zone",
+    name: "Hilltop",
     estimated_total_lodges: 500,
     lodges_scouted: 0,
     vacancies_found: 0,
     agency_agreements_won: 0,
-    assigned_controller_name: "Okonkwo Chukwuma",
+    assigned_controller_name: "Unassigned",
   },
   {
     id: "zone-odim",
-    name: "Odim Gate Zone",
+    name: "Odim",
     estimated_total_lodges: 350,
     lodges_scouted: 0,
     vacancies_found: 0,
     agency_agreements_won: 0,
-    assigned_controller_name: "Emeka Obi",
+    assigned_controller_name: "Unassigned",
   },
   {
-    id: "zone-ofulonu",
-    name: "Ofulonu Zone",
+    id: "zone-vet-odim",
+    name: "Vet Odim",
+    estimated_total_lodges: 300,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
+    assigned_controller_name: "Unassigned",
+  },
+  {
+    id: "zone-odenigwe",
+    name: "Odenigwe",
+    estimated_total_lodges: 450,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
+    assigned_controller_name: "Unassigned",
+  },
+  {
+    id: "zone-behind-flat",
+    name: "Behind Flat",
     estimated_total_lodges: 400,
     lodges_scouted: 0,
     vacancies_found: 0,
     agency_agreements_won: 0,
-    assigned_controller_name: "Okonkwo Chukwuma",
+    assigned_controller_name: "Unassigned",
   },
   {
-    id: "zone-greenhouse",
-    name: "Green House Zone",
+    id: "zone-staff-quarters",
+    name: "Staff Quarters",
+    estimated_total_lodges: 200,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
+    assigned_controller_name: "Unassigned",
+  },
+  {
+    id: "zone-green-house",
+    name: "Green House",
     estimated_total_lodges: 250,
     lodges_scouted: 0,
     vacancies_found: 0,
     agency_agreements_won: 0,
-    assigned_controller_name: "Emeka Obi",
+    assigned_controller_name: "Unassigned",
+  },
+  {
+    id: "zone-beach",
+    name: "Beach",
+    estimated_total_lodges: 200,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
+    assigned_controller_name: "Unassigned",
   },
 ];
 
@@ -527,26 +532,10 @@ export function resetAllDataToCleanSlate(): void {
     localStorage.setItem(KEYS.STUDENT_INTEL, JSON.stringify([]));
     localStorage.setItem(KEYS.CLIENTS, JSON.stringify([]));
 
-    // Reset user points and cash value to 0, maintaining roles
-    const rawUsers = localStorage.getItem(KEYS.USERS);
-    if (rawUsers) {
-      try {
-        const parsed = JSON.parse(rawUsers) as UserProfile[];
-        const zeroed = parsed.map((u) => ({
-          ...u,
-          total_points: 0,
-          cash_value_earned: 0,
-          rating_average: 5.0,
-        }));
-        localStorage.setItem(KEYS.USERS, JSON.stringify(zeroed));
-      } catch {
-        localStorage.setItem(KEYS.USERS, JSON.stringify(SEED_USERS));
-      }
-    } else {
-      localStorage.setItem(KEYS.USERS, JSON.stringify(SEED_USERS));
-    }
+    // Reset users to ONLY official Admin (Okoye), clearing all dummy demo staff
+    localStorage.setItem(KEYS.USERS, JSON.stringify(SEED_USERS));
 
-    localStorage.setItem("kingsok_clean_zero_v3", "true");
+    localStorage.setItem("kingsok_clean_zero_v5", "true");
   } catch (err) {
     console.error("Failed to reset clean slate:", err);
   }
@@ -555,7 +544,7 @@ export function resetAllDataToCleanSlate(): void {
 // Auto-run clean slate migration for any existing browser sessions with old demo data
 if (typeof window !== "undefined") {
   try {
-    if (!localStorage.getItem("kingsok_clean_zero_v3")) {
+    if (!localStorage.getItem("kingsok_clean_zero_v5")) {
       resetAllDataToCleanSlate();
     }
   } catch {}
@@ -644,7 +633,7 @@ export async function getUsers(): Promise<UserProfile[]> {
               email: row.email || "",
               phone: row.phone,
               whatsapp_phone: row.whatsapp_phone || row.phone,
-              zone_preference: row.area_or_location || meta.zone || "Hilltop Zone",
+              zone_preference: row.area_or_location || meta.zone || "Hilltop",
               desired_role: row.service_or_lodge_acquired || meta.role || "area_controller",
               roles: isApproved ? [roleFromDb] : ["pending"],
               status: isApproved ? "active" : "pending_approval",
@@ -744,7 +733,7 @@ export async function registerStaffApplicant(data: {
     email: cleanEmail,
     phone: data.phone.trim(),
     whatsapp_phone: data.whatsapp_phone?.trim() || data.phone.trim(),
-    zone_preference: data.zone_preference || "Hilltop Zone",
+    zone_preference: data.zone_preference || "Hilltop",
     desired_role: data.desired_role,
     roles: ["pending"],
     status: "pending_approval",

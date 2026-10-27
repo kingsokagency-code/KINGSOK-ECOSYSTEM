@@ -76,7 +76,7 @@ export default function CustomerRepWorkspace() {
   const [clientCategory, setClientCategory] = useState("100L Fresher");
   const [clientDept, setClientDept] = useState("");
   const [clientServiceAcquired, setClientServiceAcquired] = useState("");
-  const [clientArea, setClientArea] = useState("Hilltop Phase 1");
+  const [clientArea, setClientArea] = useState("Hilltop");
   const [clientAmountPaid, setClientAmountPaid] = useState("");
   const [clientPaymentStatus, setClientPaymentStatus] = useState<RegisteredClientRecord["payment_status"]>("paid_in_full");
   const [clientAssignedStaff, setClientAssignedStaff] = useState("");
@@ -118,7 +118,7 @@ export default function CustomerRepWorkspace() {
     setClientCategory(sector === "Accommodation" ? "100L Fresher" : sector === "Properties" ? "Property Buyer" : sector === "Rentals" ? "Equipment Rental" : "Meal Plan Subscriber");
     setClientDept("");
     setClientServiceAcquired("");
-    setClientArea(sector === "Accommodation" ? "Hilltop Phase 1" : "University Vicinity");
+    setClientArea(sector === "Accommodation" ? "Hilltop" : "University Vicinity");
     setClientAmountPaid("");
     setClientPaymentStatus("paid_in_full");
     setClientAssignedStaff(currentUser?.name || "Customer Rep");
@@ -1005,7 +1005,7 @@ export default function CustomerRepWorkspace() {
                       type="text"
                       value={clientArea}
                       onChange={(e) => setClientArea(e.target.value)}
-                      placeholder="Hilltop Phase 1"
+                      placeholder="Hilltop"
                       className="w-full p-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white"
                     />
                   </div>
@@ -1045,7 +1045,7 @@ export default function CustomerRepWorkspace() {
                       type="text"
                       value={clientAssignedStaff}
                       onChange={(e) => setClientAssignedStaff(e.target.value)}
-                      placeholder="e.g. Emeka Obi (Controller)"
+                      placeholder="e.g. Field Staff (Controller)"
                       className="w-full p-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white"
                     />
                   </div>

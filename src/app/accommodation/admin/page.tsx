@@ -151,15 +151,24 @@ export default function AdminCommandCenter() {
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState(false);
 
-  // Staff Role Assignment Handler
+  // Staff Role Assignment Handler (Instant Optimistic UI Transition)
   const handleAssignStaffRole = async (userId: string, role: WorkerRole, roleTitle: string) => {
+    // 1. Instantly shift applicant in UI state with zero latency
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, roles: [role], status: "active" as const } : u))
+    );
+    setNotification(`Staff approved and assigned as ${roleTitle}!`);
+
+    // 2. Persist to database in background
     try {
       await assignWorkerRoleAndActivate(userId, role);
       const updatedUsers = await getUsers();
       setUsers(updatedUsers);
-      setNotification(`Staff approved and assigned as ${roleTitle}!`);
     } catch (err: any) {
-      alert("Error assigning role: " + err.message);
+      console.warn("Background role assignment sync warning:", err);
+      const rollbackUsers = await getUsers();
+      setUsers(rollbackUsers);
+      alert("Error saving role assignment: " + err.message);
     }
   };
 
@@ -1470,7 +1479,7 @@ export default function AdminCommandCenter() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Map 15 New Lodges in Odim Gate Area"
+                      placeholder="e.g. Map 15 New Lodges in Odim"
                       value={dispatchTitle}
                       onChange={(e) => setDispatchTitle(e.target.value)}
                       className="w-full p-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white outline-none focus:border-emerald-500 font-medium"
@@ -1930,7 +1939,7 @@ export default function AdminCommandCenter() {
                             Requested: {applicant.desired_role ? applicant.desired_role.replace("_", " ") : "Area Controller"}
                           </span>
                           <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            Zone: {applicant.zone_preference || "Hilltop Zone"}
+                            Zone: {applicant.zone_preference || "Hilltop"}
                           </span>
                         </div>
                       </div>
