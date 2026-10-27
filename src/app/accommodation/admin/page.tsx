@@ -815,7 +815,7 @@ export default function AdminCommandCenter() {
                 setUnlocking(true);
                 try {
                   const admin = await verifyAndLoginAdmin({
-                    email: "okoye@kingsok.com",
+                    email: "okoyek989@gmail.com",
                     passcodeOrPassword: passcodeInput,
                   });
                   setCurrentUser(admin);
@@ -829,14 +829,17 @@ export default function AdminCommandCenter() {
               className="space-y-4 text-left"
             >
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Executive Passcode
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold uppercase text-slate-700">
+                    Executive Passcode / Phone
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">08033977677</span>
+                </div>
                 <input
                   type="password"
                   value={passcodeInput}
                   onChange={(e) => setPasscodeInput(e.target.value)}
-                  placeholder="Enter passcode (kingsok2026)"
+                  placeholder="Enter passcode (08033977677)"
                   required
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
                 />

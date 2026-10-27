@@ -69,6 +69,10 @@ import {
   WHATSAPP_BROADCAST_LIMIT_DEFAULT,
 } from "@/lib/contacts/batching";
 import { generateRealisticContactCsv } from "@/lib/contacts/sampleData";
+import {
+  buildAutoPilotPayload,
+  generateWhatsAppWebAutoPilotScript,
+} from "@/lib/contacts/autoPilot";
 
 export default function ContactsOrganizerPage() {
   // Navigation
@@ -114,12 +118,38 @@ export default function ContactsOrganizerPage() {
   const [newTemplateCategory, setNewTemplateCategory] = useState<MessageTemplate["category"]>("general");
   const [newTemplateContent, setNewTemplateContent] = useState<string>("");
 
+  // Auto-Pilot State
+  const [autoPilotModalOpen, setAutoPilotModalOpen] = useState<boolean>(false);
+  const [autoPilotBatch, setAutoPilotBatch] = useState<BatchInfo | null>(null);
+  const [autoPilotPace, setAutoPilotPace] = useState<number>(6); // 6 seconds safe anti-ban delay
+  const [autoPilotCopied, setAutoPilotCopied] = useState<boolean>(false);
+  const [autoPilotTab, setAutoPilotTab] = useState<"script" | "guided">("script");
+  const [guidedIndex, setGuidedIndex] = useState<number>(0);
+
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" | "error" } | null>(null);
 
   const showToast = (message: string, type: "success" | "info" | "error" = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleOpenAutoPilot = (batch: BatchInfo) => {
+    setAutoPilotBatch(batch);
+    setAutoPilotModalOpen(true);
+    setAutoPilotCopied(false);
+    setGuidedIndex(0);
+  };
+
+  const handleCopyAutoPilotScript = () => {
+    if (!autoPilotBatch) return;
+    const currentTemplate = templates.find((t) => t.id === selectedTemplateId) || DEFAULT_TEMPLATES[0];
+    const payload = buildAutoPilotPayload(autoPilotBatch.contacts, autoPilotBatch.batchNumber, currentTemplate, autoPilotPace);
+    const script = generateWhatsAppWebAutoPilotScript(payload);
+    navigator.clipboard.writeText(script);
+    setAutoPilotCopied(true);
+    showToast(`Copied Auto-Pilot script for ${autoPilotBatch.batchName}!`, "success");
+    setTimeout(() => setAutoPilotCopied(false), 4500);
   };
 
   // ----------------------------------------------------------------------------
@@ -1588,25 +1618,36 @@ export default function ContactsOrganizerPage() {
                         </div>
                       </div>
 
-                      {/* Download Buttons for this batch */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-800/80">
+                      {/* Action Buttons for this batch */}
+                      <div className="space-y-2 pt-2 border-t border-neutral-800/80">
                         <button
-                          onClick={() => handleDownloadBatch(batch, "standard")}
-                          className="px-2.5 py-2 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-neutral-200 text-xs font-medium border border-neutral-800 flex items-center justify-center gap-1.5 transition-colors"
-                          title="Download standard CSV with name, phone, E.164"
+                          onClick={() => handleOpenAutoPilot(batch)}
+                          className="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-neutral-950 text-xs font-bold shadow-md shadow-emerald-950/40 flex items-center justify-center gap-1.5 transition-all"
+                          title="Launch automated WhatsApp Web campaign for this batch"
                         >
-                          <Download className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>Standard CSV</span>
+                          <Sparkles className="w-3.5 h-3.5 fill-neutral-950" />
+                          <span>⚡ Auto-Pilot WhatsApp Web</span>
                         </button>
 
-                        <button
-                          onClick={() => handleDownloadBatch(batch, "google")}
-                          className="px-2.5 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-xs font-medium border border-emerald-500/30 flex items-center justify-center gap-1.5 transition-colors"
-                          title="Download Google Contacts CSV with automatic group tag for instant Android import"
-                        >
-                          <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Google Import</span>
-                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handleDownloadBatch(batch, "standard")}
+                            className="px-2 py-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-neutral-300 text-[11px] font-medium border border-neutral-800 flex items-center justify-center gap-1 transition-colors"
+                            title="Download standard CSV with name, phone, E.164"
+                          >
+                            <Download className="w-3 h-3 text-neutral-400" />
+                            <span>Standard CSV</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDownloadBatch(batch, "google")}
+                            className="px-2 py-1.5 rounded-lg bg-neutral-950 hover:bg-emerald-950/60 text-emerald-400 text-[11px] font-medium border border-emerald-500/20 flex items-center justify-center gap-1 transition-colors"
+                            title="Download Google Contacts CSV with group label for Android"
+                          >
+                            <Smartphone className="w-3 h-3 text-emerald-400" />
+                            <span>Google Import</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1977,6 +2018,255 @@ export default function ContactsOrganizerPage() {
           </div>
         )}
       </main>
+
+      {/* ========================================================================= */}
+      {/* AUTO-PILOT WHATSAPP WEB CAMPAIGN MODAL */}
+      {/* ========================================================================= */}
+      {autoPilotModalOpen && autoPilotBatch && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-neutral-900 border border-neutral-700 max-w-2xl w-full rounded-3xl p-6 shadow-2xl space-y-5 my-8">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-neutral-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-neutral-950 font-black shadow-lg shadow-emerald-950/60">
+                  <Sparkles className="w-5 h-5 fill-neutral-950" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-white">
+                      WhatsApp Web Auto-Pilot
+                    </h2>
+                    <span className="bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {autoPilotBatch.batchName} ({autoPilotBatch.count} Contacts)
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Automate sending personalized messages to this batch directly through WhatsApp Web on your computer.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setAutoPilotModalOpen(false)}
+                className="w-8 h-8 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white flex items-center justify-center text-base transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Campaign Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800 text-xs">
+              <div>
+                <label className="text-neutral-400 font-semibold block mb-1">
+                  Message Template:
+                </label>
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-neutral-400 font-semibold block mb-1">
+                  Anti-Ban Pacing Delay:
+                </label>
+                <select
+                  value={autoPilotPace}
+                  onChange={(e) => setAutoPilotPace(Number(e.target.value))}
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                >
+                  <option value={6}>6 Seconds (Recommended - Safe & Steady)</option>
+                  <option value={8}>8 Seconds (High Safety - Low Risk)</option>
+                  <option value={4}>4 Seconds (Express - Active Chatters)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Execution Modes Tabs */}
+            <div className="flex items-center gap-2 border-b border-neutral-800 pb-2">
+              <button
+                onClick={() => setAutoPilotTab("script")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  autoPilotTab === "script"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
+                    : "bg-neutral-800 text-neutral-400 hover:text-white"
+                }`}
+              >
+                🚀 100% Hands-Free WhatsApp Web Auto-Pilot
+              </button>
+              <button
+                onClick={() => setAutoPilotTab("guided")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  autoPilotTab === "guided"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
+                    : "bg-neutral-800 text-neutral-400 hover:text-white"
+                }`}
+              >
+                🎯 Guided 1-Click Dispatcher
+              </button>
+            </div>
+
+            {/* TAB 1: 100% HANDS FREE AUTOPILOT SCRIPT */}
+            {autoPilotTab === "script" && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    onClick={handleCopyAutoPilotScript}
+                    className={`flex-1 py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
+                      autoPilotCopied
+                        ? "bg-emerald-500 text-neutral-950"
+                        : "bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-neutral-950 shadow-emerald-950/60"
+                    }`}
+                  >
+                    {autoPilotCopied ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-neutral-950" />
+                        <span>Copied to Clipboard! (Ready to paste)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 text-neutral-950" />
+                        <span>Copy Auto-Pilot Script for {autoPilotBatch.batchName}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <a
+                    href="https://web.whatsapp.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-2xl text-xs font-semibold flex items-center justify-center gap-2 border border-neutral-700 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4 text-emerald-400" />
+                    <span>Open WhatsApp Web</span>
+                  </a>
+                </div>
+
+                {/* Step-by-Step Visual Walkthrough */}
+                <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 text-[10px] flex items-center justify-center font-bold">
+                      ?
+                    </span>
+                    <span>How to Run in 3 Easy Steps (No Phone Tapping):</span>
+                  </h4>
+
+                  <ol className="text-xs text-neutral-300 space-y-2.5 list-decimal list-inside pl-1">
+                    <li className="leading-relaxed">
+                      Click the green <strong>"Copy Auto-Pilot Script"</strong> button above.
+                    </li>
+                    <li className="leading-relaxed">
+                      Go to your open <strong>[web.whatsapp.com](https://web.whatsapp.com)</strong> tab in Chrome/Edge, press <strong>F12</strong> (or right-click anywhere $\rightarrow$ click <strong>Inspect</strong> $\rightarrow$ click <strong>Console</strong>).
+                    </li>
+                    <li className="leading-relaxed">
+                      Press <strong>Ctrl + V</strong> (Paste) into the Console and hit <strong>Enter</strong>.
+                    </li>
+                  </ol>
+
+                  <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>What Happens Next:</strong> A sleek green <strong>KINGSOK Auto-Pilot control box</strong> will appear directly on top of your WhatsApp Web screen! Click <strong>START BATCH</strong>, and it will automatically message all {autoPilotBatch.count} people in {autoPilotBatch.batchName} with their real first names, safe anti-ban delays, and live progress!
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: GUIDED QUEUE DISPATCHER */}
+            {autoPilotTab === "guided" && (
+              <div className="space-y-4">
+                {(() => {
+                  const eligibleContacts = autoPilotBatch.contacts.filter(
+                    (c) => c.isValid && !c.isDuplicate && c.consentStatus !== "opted_out"
+                  );
+                  const currentContact = eligibleContacts[guidedIndex] || eligibleContacts[0];
+                  const currentTemplate = templates.find((t) => t.id === selectedTemplateId) || DEFAULT_TEMPLATES[0];
+                  const personalizedMsg = currentContact
+                    ? personalizeMessage(currentTemplate.content, currentContact, { batchNumber: autoPilotBatch.batchNumber })
+                    : "";
+                  const waUrl = currentContact && currentContact.normalizedPhone
+                    ? generateWhatsAppLink(currentContact.normalizedPhone.replace(/[^0-9]/g, ""), personalizedMsg)
+                    : "#";
+
+                  return (
+                    <div className="space-y-3 bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-neutral-400">
+                          Contact <strong>{guidedIndex + 1}</strong> of <strong>{eligibleContacts.length}</strong>
+                        </span>
+                        <span className="text-emerald-400 font-bold">
+                          {Math.round(((guidedIndex + 1) / eligibleContacts.length) * 100)}% Completed
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full h-1.5 rounded-full bg-neutral-900 overflow-hidden">
+                        <div
+                          style={{ width: `${((guidedIndex + 1) / eligibleContacts.length) * 100}%` }}
+                          className="h-full bg-emerald-500 transition-all duration-300"
+                        />
+                      </div>
+
+                      {currentContact ? (
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-white">{currentContact.displayName}</span>
+                            <span className="text-xs font-mono text-emerald-300">
+                              {currentContact.displayPhone || currentContact.normalizedPhone}
+                            </span>
+                          </div>
+
+                          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-xs text-neutral-300 font-mono leading-relaxed whitespace-pre-wrap max-h-28 overflow-y-auto">
+                            {personalizedMsg}
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-2">
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => {
+                                if (guidedIndex < eligibleContacts.length - 1) {
+                                  setGuidedIndex(guidedIndex + 1);
+                                }
+                              }}
+                              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Open & Send in WhatsApp ({currentContact.firstName || "Contact"})</span>
+                            </a>
+
+                            <button
+                              onClick={() => {
+                                if (guidedIndex < eligibleContacts.length - 1) {
+                                  setGuidedIndex(guidedIndex + 1);
+                                }
+                              }}
+                              className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-semibold transition-colors"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-neutral-500">No eligible contacts in this batch.</p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-neutral-900 bg-neutral-950 py-6 text-center text-xs text-neutral-500">

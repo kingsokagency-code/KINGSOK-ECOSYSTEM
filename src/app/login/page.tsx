@@ -52,7 +52,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
 
   // Admin Login Fields
-  const [adminEmail, setAdminEmail] = useState("okoye@kingsok.com");
+  const [adminEmail, setAdminEmail] = useState("okoyek989@gmail.com");
   const [adminPasscode, setAdminPasscode] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -662,7 +662,7 @@ function LoginForm() {
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
                   required
-                  placeholder="okoye@kingsok.com"
+                  placeholder="okoyek989@gmail.com"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
                 />
               </div>
@@ -673,7 +673,7 @@ function LoginForm() {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Admin Passcode / Password
                 </label>
-                <span className="text-[10px] text-slate-400 font-mono">Passcode: kingsok2026</span>
+                <span className="text-[10px] text-slate-400 font-mono">08033977677 / kingsok2026</span>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -684,7 +684,7 @@ function LoginForm() {
                   value={adminPasscode}
                   onChange={(e) => setAdminPasscode(e.target.value)}
                   required
-                  placeholder="Enter Admin Passcode"
+                  placeholder="Enter 08033977677 or Admin Passcode"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono"
                 />
               </div>

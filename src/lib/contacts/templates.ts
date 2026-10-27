@@ -115,7 +115,7 @@ export function extractFirstName(fullName: string): string {
 export function personalizeMessage(
   templateContent: string,
   contact?: ContactRecord | null,
-  options?: { fallbackName?: string }
+  options?: { fallbackName?: string; batchNumber?: number }
 ): string {
   const fallback = options?.fallbackName || 'there';
 
@@ -124,13 +124,15 @@ export function personalizeMessage(
       .replace(/{{name}}/gi, fallback)
       .replace(/{{first_name}}/gi, fallback)
       .replace(/{{phone}}/gi, '+234 800 000 0000')
-      .replace(/{{batch}}/gi, 'Batch 01');
+      .replace(/{{batch}}/gi, options?.batchNumber ? `Batch ${options.batchNumber}` : 'Batch 01');
   }
 
   const firstName = contact.firstName || extractFirstName(contact.displayName);
   const fullName = contact.displayName || contact.rawName || fallback;
   const phone = contact.displayPhone || contact.normalizedPhone || contact.rawPhone;
-  const batch = contact.batchName || (contact.batchNumber ? `Batch ${contact.batchNumber}` : 'Batch 01');
+  const batch = options?.batchNumber
+    ? `Batch ${options.batchNumber}`
+    : contact.batchName || (contact.batchNumber ? `Batch ${contact.batchNumber}` : 'Batch 01');
 
   return templateContent
     .replace(/{{name}}/gi, fullName)
