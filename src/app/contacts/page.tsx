@@ -467,6 +467,12 @@ export default function ContactsOrganizerPage() {
     showToast("Personalized message copied to clipboard!", "success");
   };
 
+  const handleUpdateTemplateContent = (id: string, newContent: string) => {
+    setTemplates((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, content: newContent } : t))
+    );
+  };
+
   const handleSaveCustomTemplate = () => {
     if (!newTemplateTitle.trim() || !newTemplateContent.trim()) {
       showToast("Please provide both a title and message content.", "error");
@@ -776,6 +782,54 @@ export default function ContactsOrganizerPage() {
                     <div className="bg-neutral-950/80 p-3 rounded-xl border border-neutral-800">
                       <span className="font-semibold text-emerald-400 block mb-1">3. Zero Bot Automation</span>
                       Never use unauthorized bot scripts or unofficial WhatsApp Web auto-senders. Doing so will permanently ban your phone number.
+                    </div>
+                    {/* Live Template Content & Group Links Editor */}
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">
+                            Edit Message Write-Up & Group Links
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                            Live Sync Active
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-neutral-400">
+                          Edits automatically update Auto-Pilot & previews
+                        </span>
+                      </div>
+
+                      <textarea
+                        rows={10}
+                        value={currentTemplate.content}
+                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
+                        placeholder="Paste your WhatsApp group links and write-up here..."
+                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
+                      />
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                          <span>Personalization tags:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{first_name}}"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{name}}"}
+                          </button>
+                        </div>
+
+                        <span className="text-[11px] text-emerald-400 font-medium">
+                          ✓ Auto-saved in memory
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1833,6 +1887,54 @@ export default function ContactsOrganizerPage() {
                         </div>
                       );
                     })}
+                    {/* Live Template Content & Group Links Editor */}
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">
+                            Edit Message Write-Up & Group Links
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                            Live Sync Active
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-neutral-400">
+                          Edits automatically update Auto-Pilot & previews
+                        </span>
+                      </div>
+
+                      <textarea
+                        rows={10}
+                        value={currentTemplate.content}
+                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
+                        placeholder="Paste your WhatsApp group links and write-up here..."
+                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
+                      />
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                          <span>Personalization tags:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{first_name}}"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{name}}"}
+                          </button>
+                        </div>
+
+                        <span className="text-[11px] text-emerald-400 font-medium">
+                          ✓ Auto-saved in memory
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1935,6 +2037,54 @@ export default function ContactsOrganizerPage() {
                     <span>
                       <strong>Manual Safety Standard:</strong> KINGSOK operates on compliant manual dispatch. Use the copy button or individual click-to-chat links to communicate safely without triggering WhatsApp automated spam filters.
                     </span>
+                    {/* Live Template Content & Group Links Editor */}
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">
+                            Edit Message Write-Up & Group Links
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                            Live Sync Active
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-neutral-400">
+                          Edits automatically update Auto-Pilot & previews
+                        </span>
+                      </div>
+
+                      <textarea
+                        rows={10}
+                        value={currentTemplate.content}
+                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
+                        placeholder="Paste your WhatsApp group links and write-up here..."
+                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
+                      />
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                          <span>Personalization tags:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{first_name}}"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{name}}"}
+                          </button>
+                        </div>
+
+                        <span className="text-[11px] text-emerald-400 font-medium">
+                          ✓ Auto-saved in memory
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2180,6 +2330,54 @@ export default function ContactsOrganizerPage() {
                     <span>
                       <strong>What Happens Next:</strong> A sleek green <strong>KINGSOK Auto-Pilot control box</strong> will appear directly on top of your WhatsApp Web screen! Click <strong>START BATCH</strong>, and it will automatically message all {autoPilotBatch.count} people in {autoPilotBatch.batchName} with their real first names, safe anti-ban delays, and live progress!
                     </span>
+                    {/* Live Template Content & Group Links Editor */}
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">
+                            Edit Message Write-Up & Group Links
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                            Live Sync Active
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-neutral-400">
+                          Edits automatically update Auto-Pilot & previews
+                        </span>
+                      </div>
+
+                      <textarea
+                        rows={10}
+                        value={currentTemplate.content}
+                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
+                        placeholder="Paste your WhatsApp group links and write-up here..."
+                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
+                      />
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                          <span>Personalization tags:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{first_name}}"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
+                          >
+                            {"{{name}}"}
+                          </button>
+                        </div>
+
+                        <span className="text-[11px] text-emerald-400 font-medium">
+                          ✓ Auto-saved in memory
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -7,6 +7,58 @@ import { ContactRecord, MessageTemplate } from './types';
 
 export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
+    id: 'tmpl-nsukka-groups-combo',
+    title: 'KINGSOK Nsukka: Accommodation & Property WhatsApp Groups (Featured)',
+    category: 'accommodation',
+    description: 'Invites contacts to 1 UNN Student Accommodation group + 3 Nsukka Property & Land groups with STOP opt-out protection.',
+    content: `Hello {{first_name}}, greetings from KINGSOK ECOSYSTEM Nsukka!
+
+We have created verified WhatsApp community groups to help students and residents in Nsukka connect directly with genuine lodges, houses, and verified property investments—completely free of agent extortion and fraud.
+
+🏠 UNN Student Lodges & Accommodation Hub:
+🔗 https://chat.whatsapp.com/PASTE_ACCOMMODATION_GROUP_LINK_HERE
+(Daily updates on verified vacancies in Hilltop, Ofulonu, Odim, Behind Flat & Green House)
+
+🏢 Nsukka Property, Commercial & Land Investment Groups:
+🔗 Property Group 1: https://chat.whatsapp.com/PASTE_PROPERTY_GROUP_1_HERE
+🔗 Property Group 2: https://chat.whatsapp.com/PASTE_PROPERTY_GROUP_2_HERE
+🔗 Property Group 3: https://chat.whatsapp.com/PASTE_PROPERTY_GROUP_3_HERE
+
+👉 Simply tap any of the links above to join the groups that interest you!
+
+⚠️ Anti-Spam Notice:
+If you are NOT interested or do not want to receive updates from KINGSOK, kindly reply with the word "STOP". We will immediately remove your number from our contact list so you won't be messaged again. Please do not report as spam. Thank you!`,
+    createdAt: '2026-10-27T00:00:00.000Z',
+    isSystem: true,
+  },
+  {
+    id: 'tmpl-nsukka-groups-all',
+    title: 'KINGSOK Nsukka: Full Network (2 Accommodation & 6 Property Groups)',
+    category: 'accommodation',
+    description: 'Comprehensive directory featuring all 2 student housing groups and all 6 real estate/land property groups.',
+    content: `Good day {{first_name}}, official update from KINGSOK ECOSYSTEM Nsukka.
+
+To serve you better across student welfare and real estate, here are our official verified WhatsApp groups:
+
+🏠 Nsukka Accommodation & Student Lodges:
+🔗 Accommodation Group 1 (UNN Hilltop & Ofulonu): https://chat.whatsapp.com/PASTE_ACCOMMODATION_GROUP_1
+🔗 Accommodation Group 2 (Odim, Behind Flat & Total): https://chat.whatsapp.com/PASTE_ACCOMMODATION_GROUP_2
+
+🏢 Nsukka Real Estate, Lands & Rentals:
+🔗 Property Group 1 (Prime Residential Lands): https://chat.whatsapp.com/PASTE_PROPERTY_1
+🔗 Property Group 2 (Commercial Shops & Plazas): https://chat.whatsapp.com/PASTE_PROPERTY_2
+🔗 Property Group 3 (Self-Contains & Residential Flats): https://chat.whatsapp.com/PASTE_PROPERTY_3
+🔗 Property Group 4 (Short-lets & Executive Rentals): https://chat.whatsapp.com/PASTE_PROPERTY_4
+🔗 Property Group 5 (Agricultural & Development Acreage): https://chat.whatsapp.com/PASTE_PROPERTY_5
+🔗 Property Group 6 (Investors & Off-Market Listings): https://chat.whatsapp.com/PASTE_PROPERTY_6
+
+Tap any link to join.
+
+⚠️ Important: If you do not wish to be part of our network, simply reply STOP to this message. We respect your privacy and will permanently suppress your contact. Thank you!`,
+    createdAt: '2026-10-27T00:00:00.000Z',
+    isSystem: true,
+  },
+  {
     id: 'tmpl-accommodation-unn',
     title: 'KINGSOK ACCOMMODATIONS: UNN Lodge Finder & Student Housing',
     category: 'accommodation',
