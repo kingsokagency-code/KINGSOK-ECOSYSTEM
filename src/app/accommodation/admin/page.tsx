@@ -789,7 +789,11 @@ export default function AdminCommandCenter() {
   };
 
   const pendingStaff = users.filter(
-    (u) => u.status === "pending_approval" || u.roles.includes("pending")
+    (u) => u.id !== "u-okoye" && (u.status === "pending_approval" || u.roles.includes("pending"))
+  );
+
+  const activeStaffMembers = users.filter(
+    (u) => u.id !== "u-okoye" && !u.roles.includes("admin") && u.status === "active"
   );
 
   // Authentication barrier: If visitor is not logged in as Admin, require Admin Passcode
@@ -1134,9 +1138,11 @@ export default function AdminCommandCenter() {
               Active Staff
             </span>
             <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-              {users.length}
+              {activeStaffMembers.length}
             </div>
-            <span className="text-[11px] text-slate-400">On active roster</span>
+            <span className="text-[11px] text-slate-400">
+              {activeStaffMembers.length === 0 ? "0 Registered Staff" : `${activeStaffMembers.length} On active roster`}
+            </span>
           </div>
         </div>
 
@@ -1215,7 +1221,7 @@ export default function AdminCommandCenter() {
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                 activeTab === "workers" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-600"
               }`}>
-                {users.length}
+                {activeStaffMembers.length}
               </span>
             </button>
 
@@ -1661,7 +1667,7 @@ export default function AdminCommandCenter() {
             <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900">
-                  Staff Roster ({users.length})
+                  Staff Roster ({activeStaffMembers.length} Active Staff)
                 </h3>
                 <p className="text-xs text-slate-500">
                   Assign operational designations, approve registered applicants, and dispatch field roles.
@@ -1727,6 +1733,15 @@ export default function AdminCommandCenter() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeStaffMembers.length === 0 && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                <span>
+                  No field staff have registered yet. When recruits sign up via Staff Sign Up, they will appear under Pending Recruits above for your role assignment.
+                </span>
               </div>
             )}
 

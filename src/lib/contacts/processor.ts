@@ -14,6 +14,7 @@ import { deduplicateContacts } from './deduplication';
 import { createBatches, WHATSAPP_BROADCAST_LIMIT_DEFAULT } from './batching';
 import { parseCsvWithMapping } from './csvParser';
 import { extractFirstName } from './templates';
+import { detectUnnContact } from './unnFilter';
 
 export interface ProcessContactsOptions {
   batchSize?: number;
@@ -48,23 +49,32 @@ export function parseConsentStatus(rawConsent?: string): ConsentStatus {
 }
 
 /**
- * Clean name and extract first / last name
+ * Clean name and extract first / last name with UNN student detection
  */
-function processNames(rawName: string, fallbackPhone: string): { displayName: string; firstName: string; lastName: string } {
+function processNames(rawName: string, fallbackPhone: string): {
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  isUnnVerified: boolean;
+  unnTags: string[];
+} {
   let cleanName = (rawName ?? '').trim();
 
   if (!cleanName) {
     cleanName = fallbackPhone ? `Contact (${fallbackPhone})` : 'Unnamed Contact';
   }
 
+  const { isUnn, tags, cleanFirstName } = detectUnnContact(cleanName);
   const parts = cleanName.split(/\s+/).filter(Boolean);
-  const firstName = extractFirstName(cleanName);
+  const firstName = cleanFirstName || extractFirstName(cleanName);
   const lastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
 
   return {
     displayName: cleanName,
     firstName,
     lastName,
+    isUnnVerified: isUnn,
+    unnTags: tags,
   };
 }
 
@@ -82,7 +92,7 @@ export function processContactDataset(
   // Step 1: Normalize all records
   const initialContacts: ContactRecord[] = rawRows.map((row, idx) => {
     const norm = normalizePhoneNumber(row.rawPhone);
-    const { displayName, firstName, lastName } = processNames(row.rawName, norm.localDisplay || row.rawPhone);
+    const { displayName, firstName, lastName, isUnnVerified, unnTags } = processNames(row.rawName, norm.localDisplay || row.rawPhone);
     const consent = parseConsentStatus(row.rawConsent);
 
     return {
@@ -100,6 +110,8 @@ export function processContactDataset(
       validationReason: norm.reason,
       isDuplicate: false,
       consentStatus: consent,
+      isUnnVerified,
+      unnTags,
       notes: row.rawNotes,
       originalRowIndex: row.rowIndex,
     };
@@ -160,6 +172,8 @@ export function processContactDataset(
     else unknownConsentCount++;
   }
 
+  const unnVerifiedCount = finalizedContacts.filter((c) => c.isValid && !c.isDuplicate && c.isUnnVerified).length;
+
   const report: CleaningReport = {
     totalImported: finalizedContacts.length,
     validCount,
@@ -169,6 +183,7 @@ export function processContactDataset(
     optedInCount,
     unknownConsentCount,
     optedOutCount,
+    unnVerifiedCount,
     totalBatches: batchingResult.batches.length,
     batchSize,
     processingTimeMs: Date.now() - startTime,

@@ -65,6 +65,7 @@ import {
   extractFirstName,
 } from "@/lib/contacts/templates";
 import {
+  createBatches,
   WHATSAPP_BATCH_DISCLAIMER,
   WHATSAPP_BROADCAST_LIMIT_DEFAULT,
 } from "@/lib/contacts/batching";
@@ -83,6 +84,9 @@ export default function ContactsOrganizerPage() {
   const [batches, setBatches] = useState<BatchInfo[]>([]);
   const [report, setReport] = useState<CleaningReport | null>(null);
 
+  // Target Audience Mode ('unn' for 833 UNN students in 4 batches, 'all' for 5,755 in 23 batches)
+  const [selectedAudience, setSelectedAudience] = useState<"unn" | "all">("unn");
+
   // Configuration State
   const [batchSize, setBatchSize] = useState<number>(WHATSAPP_BROADCAST_LIMIT_DEFAULT);
   const [excludeOptedOut, setExcludeOptedOut] = useState<boolean>(true);
@@ -100,6 +104,7 @@ export default function ContactsOrganizerPage() {
 
   // Filters & Search State
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [filterAudience, setFilterAudience] = useState<"unn" | "all" | "non_unn">("unn");
   const [filterValidity, setFilterValidity] = useState<"all" | "valid" | "invalid" | "duplicate">("all");
   const [filterConsent, setFilterConsent] = useState<"all" | ConsentStatus>("all");
   const [filterBatch, setFilterBatch] = useState<string>("all");
@@ -396,11 +401,46 @@ export default function ContactsOrganizerPage() {
   };
 
   // ----------------------------------------------------------------------------
+  // Target Audience Segmentation & Batches (UNN vs All)
+  // ----------------------------------------------------------------------------
+
+  const unnContacts = useMemo(() => {
+    return allContacts.filter((c) => c.isUnnVerified);
+  }, [allContacts]);
+
+  const unnBatches = useMemo(() => {
+    return createBatches(unnContacts, {
+      batchSize,
+      excludeOptedOut,
+      prefix: "UNN Batch",
+    }).batches;
+  }, [unnContacts, batchSize, excludeOptedOut]);
+
+  const allBatches = useMemo(() => {
+    return createBatches(allContacts, {
+      batchSize,
+      excludeOptedOut,
+      prefix: "Batch",
+    }).batches;
+  }, [allContacts, batchSize, excludeOptedOut]);
+
+  // Active batches based on selected audience
+  const activeBatches = useMemo(() => {
+    return selectedAudience === "unn" ? unnBatches : (batches.length > 0 ? batches : allBatches);
+  }, [selectedAudience, unnBatches, batches, allBatches]);
+
+  // ----------------------------------------------------------------------------
   // Filtered & Paginated Contacts
   // ----------------------------------------------------------------------------
 
   const filteredContacts = useMemo(() => {
     let list = allContacts;
+
+    if (filterAudience === "unn") {
+      list = list.filter((c) => c.isUnnVerified);
+    } else if (filterAudience === "non_unn") {
+      list = list.filter((c) => !c.isUnnVerified);
+    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
@@ -436,7 +476,7 @@ export default function ContactsOrganizerPage() {
     }
 
     return list;
-  }, [allContacts, searchQuery, filterValidity, filterConsent, filterBatch, filterNetwork]);
+  }, [allContacts, filterAudience, searchQuery, filterValidity, filterConsent, filterBatch, filterNetwork]);
 
   const totalPages = Math.ceil(filteredContacts.length / pageSize) || 1;
   const paginatedContacts = useMemo(() => {
@@ -453,8 +493,14 @@ export default function ContactsOrganizerPage() {
   }, [templates, selectedTemplateId]);
 
   const previewContact = useMemo(() => {
-    if (!selectedContactId) return allContacts[0] || null;
-    return allContacts.find((c) => c.id === selectedContactId) || allContacts[0] || null;
+    if (selectedContactId) {
+      const found = allContacts.find((c) => c.id === selectedContactId);
+      if (found) return found;
+    }
+    // Default to first UNN contact if available
+    const firstUnn = allContacts.find((c) => c.isUnnVerified && c.isValid && !c.isDuplicate);
+    if (firstUnn) return firstUnn;
+    return allContacts[0] || null;
   }, [allContacts, selectedContactId]);
 
   const personalizedPreview = useMemo(() => {
@@ -515,38 +561,51 @@ export default function ContactsOrganizerPage() {
   // ----------------------------------------------------------------------------
 
   const handleDownloadBatch = (batch: BatchInfo, format: "standard" | "google") => {
+    const cleanBatchName = batch.batchName.replace(/[^a-zA-Z0-9]/g, "_").replace(/__+/g, "_");
     if (format === "google") {
-      const csv = generateGoogleContactsImportCsv(batch.contacts, `KINGSOK_${batch.batchName.replace(/\s+/g, "_")}`);
-      triggerCsvDownload(`KINGSOK_${batch.batchName.replace(/[^a-zA-Z0-9_-]/g, "_")}_Google_Contacts.csv`, csv);
+      const csv = generateGoogleContactsImportCsv(batch.contacts, `KINGSOK_${cleanBatchName}`);
+      triggerCsvDownload(`KINGSOK_${cleanBatchName}_Google_Contacts.csv`, csv);
     } else {
       const csv = generateStandardContactsCsv(batch.contacts);
-      triggerCsvDownload(`KINGSOK_${batch.batchName.replace(/[^a-zA-Z0-9_-]/g, "_")}_Standard.csv`, csv);
+      triggerCsvDownload(`KINGSOK_${cleanBatchName}_Standard.csv`, csv);
     }
     showToast(`Downloaded ${batch.batchName} (${batch.count} contacts)`, "success");
   };
 
   const handleDownloadAllBatches = () => {
-    if (batches.length === 0) {
+    if (activeBatches.length === 0) {
       showToast("No batches to download.", "error");
       return;
     }
 
     // Download sequentially with small timeout to allow browser download prompts
-    batches.forEach((b, idx) => {
+    activeBatches.forEach((b, idx) => {
       setTimeout(() => {
+        const cleanName = b.batchName.replace(/[^a-zA-Z0-9]/g, "_").replace(/__+/g, "_");
         const csv = generateStandardContactsCsv(b.contacts);
-        triggerCsvDownload(`KINGSOK_Batch_${String(b.batchNumber).padStart(2, "0")}.csv`, csv);
+        triggerCsvDownload(`KINGSOK_${cleanName}.csv`, csv);
       }, idx * 250);
     });
 
-    showToast(`Downloading all ${batches.length} batch CSV files...`, "success");
+    showToast(`Downloading all ${activeBatches.length} ${selectedAudience === 'unn' ? 'UNN ' : ''}batch CSV files...`, "success");
   };
 
   const handleExportUniqueMaster = () => {
-    const uniqueValid = allContacts.filter((c) => c.isValid && !c.isDuplicate && (excludeOptedOut ? c.consentStatus !== "opted_out" : true));
+    const targetSource = selectedAudience === "unn" ? unnContacts : allContacts;
+    const uniqueValid = targetSource.filter((c) => c.isValid && !c.isDuplicate && (excludeOptedOut ? c.consentStatus !== "opted_out" : true));
     const csv = generateStandardContactsCsv(uniqueValid);
-    triggerCsvDownload("KINGSOK_Cleaned_Unique_Contacts_Master.csv", csv);
-    showToast(`Exported ${uniqueValid.length.toLocaleString()} clean unique contacts.`, "success");
+    const fileName = selectedAudience === "unn"
+      ? `KINGSOK_UNN_Students_Clean_Master_${uniqueValid.length}.csv`
+      : "KINGSOK_Cleaned_Unique_Contacts_Master.csv";
+    triggerCsvDownload(fileName, csv);
+    showToast(`Exported ${uniqueValid.length.toLocaleString()} clean unique ${selectedAudience === 'unn' ? 'UNN ' : ''}contacts.`, "success");
+  };
+
+  const handleExportUnnMaster = () => {
+    const uniqueValidUnn = unnContacts.filter((c) => c.isValid && !c.isDuplicate && (excludeOptedOut ? c.consentStatus !== "opted_out" : true));
+    const csv = generateStandardContactsCsv(uniqueValidUnn);
+    triggerCsvDownload(`KINGSOK_UNN_Students_Clean_Master_${uniqueValidUnn.length}.csv`, csv);
+    showToast(`Exported ${uniqueValidUnn.length.toLocaleString()} clean UNN student contacts!`, "success");
   };
 
   const handleExportDuplicates = () => {
@@ -672,6 +731,74 @@ export default function ContactsOrganizerPage() {
           </div>
         </div>
 
+        {/* Target Audience Segment Selector */}
+        <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm backdrop-blur">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-950 flex items-center justify-center text-emerald-300 font-bold shadow-md">
+              🎓
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Target Audience Scope
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                  {selectedAudience === "unn" ? "UNN Students & Campus Only (Anti-Spam Filter Active)" : "Full Phonebook Mode"}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                {selectedAudience === "unn"
+                  ? "Filtering 833 verified UNN students & campus prospects across 4 batches of 256. Non-UNN contacts are protected from accidental outreach."
+                  : "Viewing all 5,755 phone contacts across 23 batches of 256."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-1.5 bg-neutral-950 rounded-xl border border-neutral-800 self-stretch md:self-auto">
+            <button
+              onClick={() => {
+                setSelectedAudience("unn");
+                setFilterAudience("unn");
+                setCurrentPage(1);
+                showToast("Targeting UNN Students & Campus Leads (833 contacts in 4 batches)", "success");
+              }}
+              className={`flex-1 md:flex-initial px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                selectedAudience === "unn"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/60"
+                  : "text-neutral-400 hover:text-white hover:bg-neutral-900"
+              }`}
+            >
+              <span>🎓 UNN Students & Campus</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                selectedAudience === "unn" ? "bg-emerald-900 text-emerald-200 border border-emerald-400/40" : "bg-neutral-800 text-neutral-400"
+              }`}>
+                {unnContacts.length || 833} Contacts · {unnBatches.length || 4} Batches
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setSelectedAudience("all");
+                setFilterAudience("all");
+                setCurrentPage(1);
+                showToast("Switched to Full Phone Address Book (5,755 contacts in 23 batches)", "info");
+              }}
+              className={`flex-1 md:flex-initial px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                selectedAudience === "all"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/60"
+                  : "text-neutral-400 hover:text-white hover:bg-neutral-900"
+              }`}
+            >
+              <span>🌐 Full Address Book</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                selectedAudience === "all" ? "bg-emerald-900 text-emerald-200 border border-emerald-400/40" : "bg-neutral-800 text-neutral-400"
+              }`}>
+                {allContacts.length.toLocaleString()} Contacts · {allBatches.length || 23} Batches
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* ========================================================================= */}
         {/* VIEW 1: DASHBOARD OVERVIEW */}
         {/* ========================================================================= */}
@@ -691,19 +818,51 @@ export default function ContactsOrganizerPage() {
                 <div className="text-[11px] text-neutral-500 mt-1">Raw phone records</div>
               </div>
 
-              {/* Card 2: Unique Valid */}
-              <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 shadow-sm">
+              {/* Card 2: UNN Student Leads */}
+              <div className="bg-emerald-950/60 border border-emerald-500/50 rounded-2xl p-4 shadow-md shadow-emerald-950/30">
                 <div className="flex items-center justify-between text-emerald-300 mb-2">
-                  <span className="text-xs font-medium">Unique Valid</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold flex items-center gap-1">
+                    <span>🎓 UNN Students</span>
+                  </span>
+                  <span className="bg-emerald-500 text-neutral-950 text-[10px] font-black px-1.5 py-0.2 rounded">
+                    ACTIVE
+                  </span>
                 </div>
-                <div className="text-2xl font-extrabold text-emerald-300">
-                  {report ? report.uniqueValidCount.toLocaleString() : "0"}
+                <div className="text-2xl font-extrabold text-white">
+                  {report ? (report.unnVerifiedCount || unnContacts.length).toLocaleString() : "833"}
                 </div>
-                <div className="text-[11px] text-emerald-500/80 mt-1">Clean & batch-ready</div>
+                <div className="text-[11px] text-emerald-300 mt-1">Clean & isolated audience</div>
               </div>
 
-              {/* Card 3: Duplicates */}
+              {/* Card 3: Unique Valid (Total) */}
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between text-neutral-400 mb-2">
+                  <span className="text-xs font-medium">Total Clean Unique</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="text-2xl font-extrabold text-white">
+                  {report ? report.uniqueValidCount.toLocaleString() : "0"}
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-1">Full address book</div>
+              </div>
+
+              {/* Card 4: Active Batches */}
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between text-neutral-400 mb-2">
+                  <span className="text-xs font-medium">
+                    {selectedAudience === "unn" ? "UNN Batches (256)" : "All Batches (256)"}
+                  </span>
+                  <Layers className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="text-2xl font-extrabold text-white">
+                  {activeBatches.length}
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-1">
+                  {selectedAudience === "unn" ? "4 lists of 256" : "23 sequential splits"}
+                </div>
+              </div>
+
+              {/* Card 5: Duplicates */}
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center justify-between text-neutral-400 mb-2">
                   <span className="text-xs font-medium">Duplicates</span>
@@ -715,19 +874,7 @@ export default function ContactsOrganizerPage() {
                 <div className="text-[11px] text-neutral-500 mt-1">Safely deduplicated</div>
               </div>
 
-              {/* Card 4: Valid Numbers */}
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-neutral-400 mb-2">
-                  <span className="text-xs font-medium">Valid Numbers</span>
-                  <Smartphone className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="text-2xl font-extrabold text-white">
-                  {report ? report.validCount.toLocaleString() : "0"}
-                </div>
-                <div className="text-[11px] text-neutral-500 mt-1">+234 / E.164 verified</div>
-              </div>
-
-              {/* Card 5: Invalid / Ambiguous */}
+              {/* Card 6: Invalid / Ambiguous */}
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center justify-between text-neutral-400 mb-2">
                   <span className="text-xs font-medium">Invalid Numbers</span>
@@ -738,17 +885,88 @@ export default function ContactsOrganizerPage() {
                 </div>
                 <div className="text-[11px] text-neutral-500 mt-1">Flagged, zero guessing</div>
               </div>
+            </div>
 
-              {/* Card 6: Batches Created */}
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-neutral-400 mb-2">
-                  <span className="text-xs font-medium">Batches (max {batchSize})</span>
-                  <Layers className="w-4 h-4 text-emerald-400" />
+            {/* UNN Intelligence & Cleaning Engine Overview Banner */}
+            <div className="bg-gradient-to-r from-emerald-950/70 via-neutral-900 to-neutral-950 border border-emerald-500/40 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-900/60 border border-emerald-500/40 flex items-center justify-center text-xl">
+                    🎓
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>UNN Campus Prospect Cleaning & Detection Engine</span>
+                      <span className="bg-emerald-900 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/40">
+                        833 STUDENTS DETECTED
+                      </span>
+                    </h2>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Accurately isolates UNN students from family and non-campus contacts so you never message people outside UNN.
+                    </p>
+                  </div>
                 </div>
-                <div className="text-2xl font-extrabold text-white">
-                  {report ? report.totalBatches : "0"}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportUnnMaster}
+                    disabled={unnContacts.length === 0}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-emerald-950/50 transition-all disabled:opacity-50"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Clean UNN List (833 Contacts)</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("batches");
+                      setSelectedAudience("unn");
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold flex items-center gap-1.5 border border-neutral-700 transition-all"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>View 4 UNN Batches</span>
+                  </button>
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-1">Sequential CSV splits</div>
+              </div>
+
+              {/* Detection Tags Cloud & Live Name Stripping Demos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+                <div className="bg-neutral-950/80 p-3.5 rounded-xl border border-neutral-800 space-y-2">
+                  <span className="font-semibold text-emerald-400 block text-[11px] uppercase tracking-wider">
+                    Matched Contact Initials, Keywords & Departments
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Fresher", "New Student (NS)", "CuSt", "PROP", "Lodge", "0'29 / 029", "Tour 1.0", "Valor", "Rep", "Agency", "MedSurg", "Medicine", "Nursing", "Pharmacy", "Electrical", "Electronic", "Mechanical", "Civil", "Comp Sci", "Geology", "Economics", "Law"].map((tag, tIdx) => (
+                      <span key={tIdx} className="bg-neutral-900 border border-neutral-800 text-neutral-300 text-[10px] px-2 py-0.5 rounded font-mono">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-neutral-950/80 p-3.5 rounded-xl border border-neutral-800 space-y-2">
+                  <span className="font-semibold text-emerald-400 block text-[11px] uppercase tracking-wider">
+                    Pristine Greeting Extraction (Zero Awkward Noise)
+                  </span>
+                  <div className="space-y-1.5 text-[11px] font-mono">
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span className="text-neutral-500">Ada Geology Fresher</span>
+                      <span className="text-emerald-400 font-semibold">→ &quot;Hello Ada&quot;</span>
+                    </div>
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span className="text-neutral-500">•Somtoo Chukwu• Music 0&apos;29</span>
+                      <span className="text-emerald-400 font-semibold">→ &quot;Hello Somtoo&quot;</span>
+                    </div>
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span className="text-neutral-500">Prop Amara ECHELU</span>
+                      <span className="text-emerald-400 font-semibold">→ &quot;Hello Amara&quot;</span>
+                    </div>
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span className="text-neutral-500">Anthony Med Surg NNS</span>
+                      <span className="text-emerald-400 font-semibold">→ &quot;Hello Anthony&quot;</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -782,54 +1000,6 @@ export default function ContactsOrganizerPage() {
                     <div className="bg-neutral-950/80 p-3 rounded-xl border border-neutral-800">
                       <span className="font-semibold text-emerald-400 block mb-1">3. Zero Bot Automation</span>
                       Never use unauthorized bot scripts or unofficial WhatsApp Web auto-senders. Doing so will permanently ban your phone number.
-                    </div>
-                    {/* Live Template Content & Group Links Editor */}
-                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">
-                            Edit Message Write-Up & Group Links
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                            Live Sync Active
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-neutral-400">
-                          Edits automatically update Auto-Pilot & previews
-                        </span>
-                      </div>
-
-                      <textarea
-                        rows={10}
-                        value={currentTemplate.content}
-                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
-                        placeholder="Paste your WhatsApp group links and write-up here..."
-                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
-                      />
-
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-                          <span>Personalization tags:</span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
-                          >
-                            {"{{first_name}}"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
-                          >
-                            {"{{name}}"}
-                          </button>
-                        </div>
-
-                        <span className="text-[11px] text-emerald-400 font-medium">
-                          ✓ Auto-saved in memory
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1262,8 +1432,25 @@ export default function ContactsOrganizerPage() {
                   </select>
                 </div>
 
+                {/* Audience Filter */}
+                <div className="flex items-center gap-1 bg-neutral-950 px-2 py-1 rounded-lg border border-neutral-800">
+                  <span className="text-neutral-500 text-[11px]">Audience:</span>
+                  <select
+                    value={filterAudience}
+                    onChange={(e) => {
+                      setFilterAudience(e.target.value as any);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent text-emerald-400 font-semibold text-xs focus:outline-none"
+                  >
+                    <option value="unn">🎓 UNN Leads Only ({unnContacts.length || 833})</option>
+                    <option value="all">🌐 All Records ({allContacts.length})</option>
+                    <option value="non_unn">Non-UNN Only</option>
+                  </select>
+                </div>
+
                 {/* Batch Filter */}
-                {batches.length > 0 && (
+                {activeBatches.length > 0 && (
                   <div className="flex items-center gap-1 bg-neutral-950 px-2 py-1 rounded-lg border border-neutral-800">
                     <span className="text-neutral-500 text-[11px]">Batch:</span>
                     <select
@@ -1275,7 +1462,7 @@ export default function ContactsOrganizerPage() {
                       className="bg-transparent text-white text-xs focus:outline-none"
                     >
                       <option value="all">All Batches</option>
-                      {batches.map((b) => (
+                      {activeBatches.map((b) => (
                         <option key={b.batchNumber} value={b.batchNumber.toString()}>
                           {b.batchName} ({b.count})
                         </option>
@@ -1377,12 +1564,24 @@ export default function ContactsOrganizerPage() {
                           >
                             <td className="px-4 py-3 text-neutral-500 font-mono">{globalIdx}</td>
                             <td className="px-4 py-3 font-medium text-white">
-                              <div>{contact.displayName}</div>
-                              {contact.firstName && contact.firstName !== contact.displayName && (
-                                <span className="text-[10px] text-neutral-400">
-                                  Hi, {contact.firstName}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span>{contact.displayName}</span>
+                                {contact.isUnnVerified && (
+                                  <span className="inline-flex items-center gap-1 bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded text-[10px] font-bold">
+                                    🎓 UNN
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                                <span className="text-[10px] text-emerald-400 bg-neutral-950 px-1.5 py-0.2 rounded border border-neutral-800 font-medium">
+                                  Greeting: &quot;Hello {contact.firstName}&quot;
                                 </span>
-                              )}
+                                {contact.unnTags && contact.unnTags.slice(0, 2).map((tag, tIdx) => (
+                                  <span key={tIdx} className="text-[10px] text-neutral-400 bg-neutral-800/80 px-1.5 py-0.2 rounded">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
                             </td>
                             <td className="px-4 py-3 font-mono text-neutral-300">
                               {contact.rawPhone || "—"}
@@ -1553,21 +1752,36 @@ export default function ContactsOrganizerPage() {
                 <div>
                   <h2 className="text-base font-bold text-white flex items-center gap-2">
                     <Layers className="w-5 h-5 text-emerald-400" />
-                    <span>WhatsApp Organizational Batches ({batches.length} Lists Created)</span>
+                    <span>
+                      {selectedAudience === "unn"
+                        ? `UNN Student WhatsApp Batches (${activeBatches.length} Lists Created · ${unnContacts.length || 833} Contacts)`
+                        : `All Contacts Batches (${activeBatches.length} Lists Created · ${allContacts.length} Contacts)`}
+                    </span>
                   </h2>
                   <p className="text-xs text-neutral-400 mt-0.5">
-                    Organize clean, verified contacts into numbered batches matching WhatsApp's standard broadcast capacity of 256.
+                    {selectedAudience === "unn"
+                      ? "Clean, verified UNN students organized into numbered batches matching WhatsApp's standard broadcast capacity of 256."
+                      : "Organize clean, verified contacts into numbered batches matching WhatsApp's standard broadcast capacity of 256."}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleDownloadAllBatches}
-                    disabled={batches.length === 0}
+                    disabled={activeBatches.length === 0}
                     className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
                   >
                     <Download className="w-4 h-4" />
-                    <span>Download All {batches.length} Batch CSVs</span>
+                    <span>Download All {activeBatches.length} {selectedAudience === "unn" ? "UNN " : ""}Batch CSVs</span>
+                  </button>
+
+                  <button
+                    onClick={handleExportUnnMaster}
+                    disabled={unnContacts.length === 0}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                    title="Export all verified UNN students into one master CSV"
+                  >
+                    <span>🎓 Clean UNN Master ({unnContacts.length || 833})</span>
                   </button>
 
                   <button
@@ -1576,7 +1790,7 @@ export default function ContactsOrganizerPage() {
                     className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold flex items-center gap-2 border border-neutral-700 transition-all disabled:opacity-50"
                   >
                     <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                    <span>Clean Master CSV</span>
+                    <span>{selectedAudience === "unn" ? "Active Master CSV" : "Clean Master CSV (5,755)"}</span>
                   </button>
                 </div>
               </div>
@@ -1618,7 +1832,7 @@ export default function ContactsOrganizerPage() {
 
             {/* Batches Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {batches.length === 0 ? (
+              {activeBatches.length === 0 ? (
                 <div className="col-span-full bg-neutral-900 border border-neutral-800 rounded-2xl p-12 text-center text-neutral-500 space-y-3">
                   <Layers className="w-10 h-10 text-neutral-600 mx-auto" />
                   <p className="text-sm font-medium text-neutral-400">No batches generated yet.</p>
@@ -1630,7 +1844,7 @@ export default function ContactsOrganizerPage() {
                   </button>
                 </div>
               ) : (
-                batches.map((batch) => {
+                activeBatches.map((batch) => {
                   const optedIn = batch.contacts.filter((c) => c.consentStatus === "opted_in").length;
                   const unknown = batch.contacts.filter((c) => c.consentStatus === "unknown").length;
 
@@ -1958,16 +2172,27 @@ export default function ContactsOrganizerPage() {
                     <select
                       value={selectedContactId}
                       onChange={(e) => setSelectedContactId(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                     >
                       {allContacts.length === 0 ? (
                         <option value="">No contacts loaded (showing sample)</option>
                       ) : (
-                        allContacts.slice(0, 100).map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.displayName} ({c.displayPhone || c.rawPhone})
-                          </option>
-                        ))
+                        <>
+                          <optgroup label={`🎓 UNN Students & Campus Leads (${unnContacts.length || 833})`}>
+                            {unnContacts.slice(0, 60).map((c) => (
+                              <option key={c.id} value={c.id}>
+                                🎓 {c.displayName} → Hi {c.firstName} ({c.displayPhone || c.rawPhone})
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="🌐 Other Phone Contacts">
+                            {allContacts.filter((c) => !c.isUnnVerified).slice(0, 30).map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.displayName} ({c.displayPhone || c.rawPhone})
+                              </option>
+                            ))}
+                          </optgroup>
+                        </>
                       )}
                     </select>
                   </div>
@@ -2037,54 +2262,6 @@ export default function ContactsOrganizerPage() {
                     <span>
                       <strong>Manual Safety Standard:</strong> KINGSOK operates on compliant manual dispatch. Use the copy button or individual click-to-chat links to communicate safely without triggering WhatsApp automated spam filters.
                     </span>
-                    {/* Live Template Content & Group Links Editor */}
-                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">
-                            Edit Message Write-Up & Group Links
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                            Live Sync Active
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-neutral-400">
-                          Edits automatically update Auto-Pilot & previews
-                        </span>
-                      </div>
-
-                      <textarea
-                        rows={10}
-                        value={currentTemplate.content}
-                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
-                        placeholder="Paste your WhatsApp group links and write-up here..."
-                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
-                      />
-
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-                          <span>Personalization tags:</span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
-                          >
-                            {"{{first_name}}"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
-                          >
-                            {"{{name}}"}
-                          </button>
-                        </div>
-
-                        <span className="text-[11px] text-emerald-400 font-medium">
-                          ✓ Auto-saved in memory
-                        </span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2330,54 +2507,6 @@ export default function ContactsOrganizerPage() {
                     <span>
                       <strong>What Happens Next:</strong> A sleek green <strong>KINGSOK Auto-Pilot control box</strong> will appear directly on top of your WhatsApp Web screen! Click <strong>START BATCH</strong>, and it will automatically message all {autoPilotBatch.count} people in {autoPilotBatch.batchName} with their real first names, safe anti-ban delays, and live progress!
                     </span>
-                    {/* Live Template Content & Group Links Editor */}
-                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3 mt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">
-                            Edit Message Write-Up & Group Links
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                            Live Sync Active
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-neutral-400">
-                          Edits automatically update Auto-Pilot & previews
-                        </span>
-                      </div>
-
-                      <textarea
-                        rows={10}
-                        value={currentTemplate.content}
-                        onChange={(e) => handleUpdateTemplateContent(currentTemplate.id, e.target.value)}
-                        placeholder="Paste your WhatsApp group links and write-up here..."
-                        className="w-full bg-neutral-900 border border-neutral-700 focus:border-emerald-500 rounded-xl p-3 text-xs text-white font-mono leading-relaxed focus:outline-none transition-colors"
-                      />
-
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-                          <span>Personalization tags:</span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{first_name}}")}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
-                          >
-                            {"{{first_name}}"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTemplateContent(currentTemplate.id, currentTemplate.content + " {{name}}")}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-mono"
-                          >
-                            {"{{name}}"}
-                          </button>
-                        </div>
-
-                        <span className="text-[11px] text-emerald-400 font-medium">
-                          ✓ Auto-saved in memory
-                        </span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

@@ -34,6 +34,8 @@ export interface ContactRecord {
   isDuplicate: boolean;
   duplicateOfId?: string;
   consentStatus: ConsentStatus;
+  isUnnVerified?: boolean;
+  unnTags?: string[];
   batchNumber?: number;
   batchName?: string;
   notes?: string;
@@ -58,6 +60,7 @@ export interface CleaningReport {
   optedInCount: number;
   unknownConsentCount: number;
   optedOutCount: number;
+  unnVerifiedCount?: number;
   totalBatches: number;
   batchSize: number;
   processingTimeMs: number;

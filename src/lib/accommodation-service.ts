@@ -465,7 +465,7 @@ const KEYS = {
   GOAL: "kingsok_acc_goal",
   PRINCIPLES: "kingsok_acc_principles",
   STRATEGIES: "kingsok_acc_strategies",
-  USERS: "kingsok_acc_users",
+  USERS: "kingsok_clean_staff_roster_v2",
   CURRENT_USER: "kingsok_current_user",
   LODGES: "kingsok_acc_lodges",
   LEADS: "kingsok_acc_leads",
@@ -520,6 +520,27 @@ function writeData<T>(key: string, data: T): void {
 export function resetAllDataToCleanSlate(): void {
   if (typeof window === "undefined") return;
   try {
+    const keysToRemove = [
+      "kingsok_acc_users",
+      "kingsok_users",
+      "kingsok_clean_zero_v1",
+      "kingsok_clean_zero_v2",
+      "kingsok_clean_zero_v3",
+      "kingsok_clean_zero_v4",
+      "kingsok_clean_zero_v5",
+      "kingsok_acc_lodges",
+      "kingsok_acc_leads",
+      "kingsok_acc_blasts",
+      "kingsok_acc_rep_logs",
+      "kingsok_acc_student_intel",
+      "kingsok_registered_clients",
+      "kingsok_acc_tasks",
+      "kingsok_acc_applications",
+    ];
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
+
     localStorage.setItem(KEYS.GOAL, JSON.stringify(INITIAL_GOAL));
     localStorage.setItem(KEYS.ZONES, JSON.stringify(INITIAL_ZONES));
     localStorage.setItem(KEYS.LODGES, JSON.stringify([]));
@@ -534,8 +555,9 @@ export function resetAllDataToCleanSlate(): void {
 
     // Reset users to ONLY official Admin (Okoye), clearing all dummy demo staff
     localStorage.setItem(KEYS.USERS, JSON.stringify(SEED_USERS));
+    localStorage.setItem(KEYS.CURRENT_USER, "u-okoye");
 
-    localStorage.setItem("kingsok_clean_zero_v5", "true");
+    localStorage.setItem("kingsok_clean_zero_v8", "true");
   } catch (err) {
     console.error("Failed to reset clean slate:", err);
   }
@@ -544,7 +566,7 @@ export function resetAllDataToCleanSlate(): void {
 // Auto-run clean slate migration for any existing browser sessions with old demo data
 if (typeof window !== "undefined") {
   try {
-    if (!localStorage.getItem("kingsok_clean_zero_v5")) {
+    if (!localStorage.getItem("kingsok_clean_zero_v8")) {
       resetAllDataToCleanSlate();
     }
   } catch {}
@@ -586,15 +608,50 @@ export async function saveStrategy(strategy: Strategy): Promise<void> {
 
 // User & Role Management
 export async function getUsers(): Promise<UserProfile[]> {
-  const list = readData<UserProfile[]>(KEYS.USERS, SEED_USERS);
-  const okoye = list.find((u) => u.id === "u-okoye" || u.roles.includes("admin"));
-  if (okoye && (okoye.email !== "okoyek989@gmail.com" || okoye.phone !== "08103415600")) {
-    okoye.email = "okoyek989@gmail.com";
-    okoye.phone = "08103415600";
-    writeData(KEYS.USERS, list);
+  // Purge any legacy demo or test keys from old client storage
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem("kingsok_acc_users");
+      localStorage.removeItem("kingsok_users");
+    } catch {}
   }
 
-  // Cross-device sync: Fetch staff registrations from Supabase
+  let list = readData<UserProfile[]>(KEYS.USERS, SEED_USERS);
+
+  // Strictly sanitize: Remove any legacy demo accounts or phantom registrations
+  const BANNED_LEGACY_NAMES = new Set([
+    "chioma nwosu",
+    "kalu eze",
+    "okonkwo chukwuma",
+    "emeka obi",
+    "ebuka john",
+  ]);
+  const BANNED_LEGACY_IDS = new Set([
+    "u-emeka",
+    "u-chioma",
+    "u-kalu",
+    "u-okonkwo",
+    "u-dev-test",
+  ]);
+
+  list = list.filter((u) => {
+    if (u.id === "u-okoye") return true;
+    if (BANNED_LEGACY_IDS.has(u.id)) return false;
+    if (BANNED_LEGACY_NAMES.has(u.name.toLowerCase().trim())) return false;
+    return true;
+  });
+
+  // Ensure Okoye (Admin) is always intact and valid
+  const okoyeIndex = list.findIndex((u) => u.id === "u-okoye");
+  if (okoyeIndex === -1) {
+    list.unshift({ ...SEED_USERS[0] });
+  } else {
+    list[okoyeIndex].email = "okoyek989@gmail.com";
+    list[okoyeIndex].phone = "08103415600";
+    list[okoyeIndex].status = "active";
+  }
+
+  // Cross-device sync: Fetch real staff registrations from Supabase
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -606,6 +663,10 @@ export async function getUsers(): Promise<UserProfile[]> {
       if (!error && data && data.length > 0) {
         let changed = false;
         for (const row of data) {
+          if (BANNED_LEGACY_NAMES.has((row.client_name || "").toLowerCase().trim())) {
+            continue;
+          }
+
           const existing = list.find(
             (u) =>
               u.id === row.id ||
@@ -656,6 +717,7 @@ export async function getUsers(): Promise<UserProfile[]> {
     }
   }
 
+  writeData(KEYS.USERS, list);
   return list;
 }
 
