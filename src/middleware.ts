@@ -10,6 +10,22 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Always allow Next.js internal assets, styles, chunks, and static media
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.endsWith(".css") ||
+    pathname.endsWith(".js") ||
+    pathname.endsWith(".csv") ||
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".png") ||
+    pathname.endsWith(".jpg") ||
+    pathname.endsWith(".ico")
+  ) {
+    return response;
+  }
+
   // Direct signup route is rejected immediately and redirected to login with notice
   if (pathname === "/signup") {
     const loginUrl = new URL("/login", request.url);
@@ -17,9 +33,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Allowed public routes: Ecosystem Home, Accommodation sector workspaces, and auth routes
+  // Allowed public routes: Ecosystem Home, Accommodation sector workspaces, Contacts Organizer, public CSV data, and auth routes
   const isPublicRoute =
     pathname === "/" ||
+    pathname.startsWith("/contacts") ||
+    pathname.endsWith(".csv") ||
     pathname.startsWith("/accommodation") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/forgot-password") ||

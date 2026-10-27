@@ -22,6 +22,7 @@ import {
   getDailyTasks,
   assignAdminDuty,
   deleteDailyTask,
+  resetAllDataToCleanSlate,
   CampaignGoal,
   Strategy,
   UserProfile,
@@ -64,6 +65,7 @@ import {
   Calendar,
   AlertCircle,
   Download,
+  RotateCcw,
   FileSpreadsheet,
   MapPin,
   Tag,
@@ -137,9 +139,9 @@ export default function AdminCommandCenter() {
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [targetAccommodated, setTargetAccommodated] = useState(500);
-  const [currentAccommodated, setCurrentAccommodated] = useState(42);
+  const [currentAccommodated, setCurrentAccommodated] = useState(0);
   const [targetReach, setTargetReach] = useState(5000);
-  const [currentReach, setCurrentReach] = useState(840);
+  const [currentReach, setCurrentReach] = useState(0);
   const [deadlineText, setDeadlineText] = useState("");
 
   useEffect(() => {
@@ -707,6 +709,57 @@ export default function AdminCommandCenter() {
     setNotification("Exporting all 4 KINGSOK datasets for Excel...");
   };
 
+  // 6. Reset all local metrics and demo data to clean slate (0)
+  const handleResetToCleanSlate = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to initialize a Clean Slate? This will purge all local cached recordings and reset all campaign and zone metrics to 0."
+      )
+    ) {
+      return;
+    }
+
+    resetAllDataToCleanSlate();
+
+    const [
+      g,
+      uList,
+      lList,
+      intelList,
+      clientsList,
+      leadList,
+      bList,
+      rList,
+      rates,
+      tList,
+    ] = await Promise.all([
+      getCampaignGoal(),
+      getUsers(),
+      getLodges(),
+      getStudentIntelRecords(),
+      getRegisteredClients(),
+      getClientLeads(),
+      getWhatsAppBlasts(),
+      getCustomerRepLogs(),
+      getWorkerRatings(),
+      getDailyTasks(),
+    ]);
+
+    setGoal(g);
+    setCurrentAccommodated(g.current_accommodated);
+    setCurrentReach(g.current_freshers_reach);
+    setUsers(uList);
+    setLodges(lList);
+    setStudentIntel(intelList);
+    setRegisteredClients(clientsList);
+    setLeads(leadList);
+    setBlasts(bList);
+    setRepLogs(rList);
+    setRatings(rates);
+    setTasks(tList);
+    setNotification("Clean slate initialized: all metrics and records zeroed out to ground truth!");
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
       <AccommodationNav />
@@ -747,6 +800,15 @@ export default function AdminCommandCenter() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <button
+                onClick={handleResetToCleanSlate}
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-700/50 text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                title="Purge all demo and cached records, resetting metrics to 0"
+              >
+                <RotateCcw className="w-4 h-4 text-red-400" />
+                <span>Zero All (0)</span>
+              </button>
+
               <button
                 onClick={() => setExportModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs font-bold transition-colors shadow-sm cursor-pointer"

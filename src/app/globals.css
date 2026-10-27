@@ -3,15 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #f5f5f5;
-  --kingsok-gold: #d4af37;
-  --kingsok-green: #10b981;
-  --kingsok-black: #0a0a0a;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --kingsok-gold: #d97706;
+  --kingsok-green: #059669;
 }
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
 }
 
 body {

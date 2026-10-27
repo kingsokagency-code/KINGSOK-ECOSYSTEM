@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:contacts": "npx tsx scripts/test-contacts.ts",
     "test:1a": "npx tsx scripts/verify-task1a.ts"
   },
   "dependencies": {

@@ -11,7 +11,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0A0A0A",
+  themeColor: "#059669",
 };
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col">
+      <body className="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col font-sans">
         {children}
       </body>
     </html>

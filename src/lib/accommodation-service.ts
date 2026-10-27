@@ -240,9 +240,9 @@ export interface ClientApproachGuide {
 export const INITIAL_GOAL: CampaignGoal = {
   title: "Accommodate 500 Students with Speed, Truth & Excellence",
   target_accommodated: 500,
-  current_accommodated: 42,
+  current_accommodated: 0,
   target_freshers_reach: 5000,
-  current_freshers_reach: 840,
+  current_freshers_reach: 0,
   deadline_text: "Intake 2026/2027 Academic Session",
 };
 
@@ -315,8 +315,8 @@ const SEED_USERS: UserProfile[] = [
     email: "okoye@kingsok.com",
     phone: "+234 800 000 0001",
     roles: ["admin", "area_controller", "hotliner", "customer_rep"],
-    total_points: 150,
-    cash_value_earned: 150000,
+    total_points: 0,
+    cash_value_earned: 0,
     rating_average: 5.0,
     joined_at: new Date(Date.now() - 86400000 * 30).toISOString(),
   },
@@ -326,9 +326,9 @@ const SEED_USERS: UserProfile[] = [
     email: "emeka@kingsok.com",
     phone: "+234 803 111 2233",
     roles: ["area_controller", "hotliner"], // Multi-role!
-    total_points: 24,
-    cash_value_earned: 24000,
-    rating_average: 4.8,
+    total_points: 0,
+    cash_value_earned: 0,
+    rating_average: 5.0,
     joined_at: new Date(Date.now() - 86400000 * 14).toISOString(),
   },
   {
@@ -337,9 +337,9 @@ const SEED_USERS: UserProfile[] = [
     email: "chioma@kingsok.com",
     phone: "+234 814 222 3344",
     roles: ["hotliner"],
-    total_points: 18,
-    cash_value_earned: 18000,
-    rating_average: 4.9,
+    total_points: 0,
+    cash_value_earned: 0,
+    rating_average: 5.0,
     joined_at: new Date(Date.now() - 86400000 * 10).toISOString(),
   },
   {
@@ -348,9 +348,9 @@ const SEED_USERS: UserProfile[] = [
     email: "kalu@kingsok.com",
     phone: "+234 705 333 4455",
     roles: ["customer_rep"],
-    total_points: 12,
-    cash_value_earned: 12000,
-    rating_average: 4.7,
+    total_points: 0,
+    cash_value_earned: 0,
+    rating_average: 5.0,
     joined_at: new Date(Date.now() - 86400000 * 8).toISOString(),
   },
   {
@@ -359,205 +359,54 @@ const SEED_USERS: UserProfile[] = [
     email: "okonkwo@kingsok.com",
     phone: "+234 806 777 8899",
     roles: ["area_controller"],
-    total_points: 30,
-    cash_value_earned: 30000,
-    rating_average: 4.9,
+    total_points: 0,
+    cash_value_earned: 0,
+    rating_average: 5.0,
     joined_at: new Date(Date.now() - 86400000 * 5).toISOString(),
   },
 ];
 
-const SEED_LODGES: LodgeAsset[] = [
-  {
-    id: "lodge-101",
-    name: "Peace Haven Lodge",
-    area: "Hilltop Phase 1",
-    address: "12 University Road, Behind Faculty of Arts",
-    caretaker_name: "Elder Samuel",
-    caretaker_phone: "+234 803 456 7890",
-    lodge_president_name: "Chukwudi (Final Year Pol Sci)",
-    lodge_president_phone: "+234 812 345 6789",
-    shop_owner_contact: "Mama Joy Provisions (+234 802 111 0000)",
-    is_vacant_now: true,
-    vacancy_count: 3,
-    expected_vacancy_date: "Immediate (3 rooms ready)",
-    has_final_year_students: true,
-    final_year_details: "4 graduating students vacating in 3 weeks. Room 8 has a double mattress and reading desk for sale.",
-    room_types: "Self-contain, Tiled, Kitchenette",
-    rent_per_session: "₦280,000 / year",
-    water_reliability: "Reliable Borehole",
-    light_reliability: "Regular Grid",
-    security_features: "Gated compound with night security watchman",
-    is_verified: true,
-    recorded_by_id: "u-emeka",
-    recorded_by_name: "Emeka Obi",
-    created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
-    admin_points_awarded: 2,
-    admin_feedback: "Excellent detailed submission with lodge president contact included.",
-  },
-  {
-    id: "lodge-102",
-    name: "Apex Villa Royale",
-    area: "Odim Gate Area",
-    address: "5 Odim Crescent, 3 mins walk to Campus Gate",
-    caretaker_name: "Mr. Boniface",
-    caretaker_phone: "+234 805 987 6543",
-    lodge_president_name: "Sarah (Pharmacy)",
-    lodge_president_phone: "+234 816 789 0123",
-    is_vacant_now: false,
-    vacancy_count: 0,
-    expected_vacancy_date: "End of month (2 rooms opening)",
-    has_final_year_students: true,
-    final_year_details: "2 final year pharmacy students leaving end of July.",
-    room_types: "1-Bedroom Flat, Self-contain",
-    rent_per_session: "₦350,000 / year",
-    water_reliability: "Reliable Borehole",
-    light_reliability: "Generator Supported",
-    security_features: "Perimeter fence, razor wire, CCTV at entrance",
-    is_verified: true,
-    recorded_by_id: "u-emeka",
-    recorded_by_name: "Emeka Obi",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-    admin_points_awarded: 1,
-    admin_feedback: "Good lodge. Keep in touch with Mr. Boniface for the 2 upcoming vacancies.",
-  },
-  {
-    id: "lodge-103",
-    name: "St. Jude Student Suites",
-    area: "Ofulonu Zone",
-    address: "18 Ofulonu Extension",
-    caretaker_name: "Pa Patrick",
-    caretaker_phone: "+234 703 123 4567",
-    is_vacant_now: true,
-    vacancy_count: 5,
-    expected_vacancy_date: "Immediate (New building annex)",
-    has_final_year_students: false,
-    room_types: "Single rooms with private baths",
-    rent_per_session: "₦200,000 / year",
-    water_reliability: "Reliable Borehole",
-    light_reliability: "Regular Grid",
-    security_features: "Security gate, fenced",
-    is_verified: true,
-    recorded_by_id: "u-okoye",
-    recorded_by_name: "Okoye (Admin)",
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    admin_points_awarded: 3,
-  },
-];
-
-const SEED_LEADS: ClientLead[] = [
-  {
-    id: "lead-1",
-    fresher_name: "Ibrahim Musa",
-    phone: "+234 809 112 3344",
-    preferred_area: "Hilltop Phase 1",
-    budget_range: "₦250k - ₦300k",
-    desired_room_type: "Self-contain",
-    status: "inspection_scheduled",
-    assigned_controller_name: "Emeka Obi",
-    notes: "Coming with his guardian on Saturday morning. Prefers Peace Haven Lodge.",
-    hotliner_id: "u-chioma",
-    hotliner_name: "Chioma Nwosu",
-    created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-    admin_points_awarded: 2,
-  },
-  {
-    id: "lead-2",
-    fresher_name: "Blessing Adebayo",
-    phone: "+234 902 334 5566",
-    preferred_area: "Odim Gate Area",
-    budget_range: "₦300k - ₦380k",
-    desired_room_type: "Executive self-contain with generator",
-    status: "options_sent",
-    notes: "Sent Apex Villa Royale and St. Jude photos. Awaiting her father's review.",
-    hotliner_id: "u-chioma",
-    hotliner_name: "Chioma Nwosu",
-    created_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-  },
-];
-
-const SEED_BLASTS: WhatsAppBlastLog[] = [
-  {
-    id: "blast-1",
-    group_name: "UNN 2026/2027 Freshers General",
-    broadcast_type: "New Vacancies List",
-    freshers_reached_estimate: 480,
-    hotliner_name: "Chioma Nwosu",
-    created_at: new Date(Date.now() - 3600000 * 3).toISOString(),
-  },
-  {
-    id: "blast-2",
-    group_name: "Faculty of Engineering Freshers",
-    broadcast_type: "Fresher Orientation",
-    freshers_reached_estimate: 210,
-    hotliner_name: "Chioma Nwosu",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-];
-
-const SEED_REP_LOGS: CustomerRepLog[] = [
-  {
-    id: "rep-1",
-    category: "Lodge Verification",
-    target_reference: "Peace Haven Lodge",
-    findings: "Called Elder Samuel (caretaker). Confirmed 3 rooms are vacant. Verified water pump is working. Price is exactly ₦280k as recorded by Emeka.",
-    action_taken: "Approved lodge as verified in directory.",
-    status: "resolved",
-    rep_name: "Kalu Eze",
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    admin_points_awarded: 1,
-  },
-];
-
-const SEED_RATINGS: WorkerRatingEvent[] = [
-  {
-    id: "rate-1",
-    worker_id: "u-emeka",
-    worker_name: "Emeka Obi",
-    role: "area_controller",
-    task_reference: "Lodge Entry: Peace Haven Lodge",
-    points_awarded: 2,
-    rating_stars: 5,
-    coaching_comment: "Outstanding work getting the lodge president's contact and final year student graduating details.",
-    awarded_by: "Okoye",
-    created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-];
+const SEED_LODGES: LodgeAsset[] = [];
+const SEED_LEADS: ClientLead[] = [];
+const SEED_BLASTS: WhatsAppBlastLog[] = [];
+const SEED_REP_LOGS: CustomerRepLog[] = [];
+const SEED_RATINGS: WorkerRatingEvent[] = [];
 
 export const INITIAL_ZONES: TerritoryZone[] = [
   {
     id: "zone-hilltop",
     name: "Hilltop Zone",
     estimated_total_lodges: 500,
-    lodges_scouted: 74,
-    vacancies_found: 18,
-    agency_agreements_won: 6,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
     assigned_controller_name: "Okonkwo Chukwuma",
   },
   {
     id: "zone-odim",
     name: "Odim Gate Zone",
     estimated_total_lodges: 350,
-    lodges_scouted: 48,
-    vacancies_found: 9,
-    agency_agreements_won: 4,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
     assigned_controller_name: "Emeka Obi",
   },
   {
     id: "zone-ofulonu",
     name: "Ofulonu Zone",
     estimated_total_lodges: 400,
-    lodges_scouted: 32,
-    vacancies_found: 11,
-    agency_agreements_won: 3,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
     assigned_controller_name: "Okonkwo Chukwuma",
   },
   {
     id: "zone-greenhouse",
     name: "Green House Zone",
     estimated_total_lodges: 250,
-    lodges_scouted: 22,
-    vacancies_found: 5,
-    agency_agreements_won: 2,
+    lodges_scouted: 0,
+    vacancies_found: 0,
+    agency_agreements_won: 0,
     assigned_controller_name: "Emeka Obi",
   },
 ];
@@ -594,216 +443,9 @@ export const CLIENT_APPROACH_GUIDE: ClientApproachGuide = {
   ],
 };
 
-const SEED_APPLICATIONS: LodgeAgencyApplication[] = [
-  {
-    id: "app-1",
-    lodge_name: "Peace Haven Lodge",
-    area: "Hilltop Phase 1",
-    caretaker_name: "Elder Samuel",
-    caretaker_phone: "+234 803 456 7890",
-    controller_id: "u-okonkwo",
-    controller_name: "Okonkwo Chukwuma",
-    commission_terms: "10% Agency commission, zero upfront fee to landlord, all freshers verified",
-    status: "accepted",
-    notes: "Elder Samuel agreed. KINGSOK is now exclusive agent for the 3 vacant self-contain rooms.",
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "app-2",
-    lodge_name: "Apex Villa Royale",
-    area: "Odim Gate Area",
-    caretaker_name: "Mr. Boniface",
-    caretaker_phone: "+234 805 987 6543",
-    controller_id: "u-emeka",
-    controller_name: "Emeka Obi",
-    commission_terms: "10% Agency fee, priority listing to incoming fresher database",
-    status: "in_discussion",
-    notes: "Meeting on Saturday to finalize agreement for the 2 upcoming rooms.",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-];
-
-const SEED_STUDENT_INTEL: StudentIntelRecord[] = [
-  {
-    id: "intel-fy-1",
-    student_type: "final_year",
-    student_name: "Chinedu Eze",
-    phone: "+234 802 987 6543",
-    current_lodge_name: "Peace Haven Lodge",
-    area: "Hilltop Phase 1",
-    room_number_or_type: "Room 14 (Self-contain)",
-    expected_move_date: "July 2026",
-    room_opening_up: true,
-    items_for_sale: "Haier Thermocool small fridge, 4.5ft Vitafoam mattress, gas cooker + 6kg cylinder, wooden reading table",
-    notes: "Top-floor corner room with good ventilation. Student wants to sell items as a package or separately to incoming fresher.",
-    recorded_by_id: "u-okonkwo",
-    recorded_by_name: "Okonkwo Chukwuma",
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    admin_points_awarded: 2,
-    admin_feedback: "High-value intel. Room secured for incoming fresher intake.",
-  },
-  {
-    id: "intel-fy-2",
-    student_type: "final_year",
-    student_name: "Fatima Abubakar",
-    phone: "+234 813 555 7890",
-    current_lodge_name: "Apex Villa Royale",
-    area: "Odim Gate Area",
-    room_number_or_type: "Block B, Room 4",
-    expected_move_date: "End of Session (August)",
-    room_opening_up: true,
-    items_for_sale: "Executive study desk and swivel chair, rechargeable standing fan, wardrobe rack",
-    notes: "Lodge is 3 mins from campus gate. Caretaker confirmed room can be reserved immediately upon deposit.",
-    recorded_by_id: "u-emeka",
-    recorded_by_name: "Emeka Obi",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-    admin_points_awarded: 2,
-  },
-  {
-    id: "intel-tr-1",
-    student_type: "transition",
-    student_name: "Somtochukwu Okafor",
-    phone: "+234 703 111 8899",
-    current_lodge_name: "Green Ridge Lodge",
-    area: "Ofulonu Zone",
-    room_number_or_type: "Room 3 (Single Room)",
-    expected_move_date: "Next Session Intake",
-    reason_for_moving: "Water pumping irregularity and distant walking distance to faculty",
-    preferred_new_area: "Hilltop Phase 1",
-    target_budget: "₦260,000 - ₦300,000",
-    desired_new_room_type: "Standard Self-contain with steady borehole water",
-    notes: "Ready to inspect lodges anytime this weekend with an Area Controller.",
-    recorded_by_id: "u-okonkwo",
-    recorded_by_name: "Okonkwo Chukwuma",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-    admin_points_awarded: 1,
-  },
-  {
-    id: "intel-tr-2",
-    student_type: "transition",
-    student_name: "David Adeleke",
-    phone: "+234 815 444 2211",
-    current_lodge_name: "St. Jude Executive Villa",
-    area: "Hilltop Zone",
-    room_number_or_type: "Flat 2A",
-    expected_move_date: "Immediate (within 2 weeks)",
-    reason_for_moving: "Landlord excessive utility surcharge increase without regular light",
-    preferred_new_area: "Odim Gate Area",
-    target_budget: "₦220,000 - ₦250,000",
-    desired_new_room_type: "Self-contain or 1-bedroom flat",
-    notes: "Has paid advance notice to current caretaker. Wants a verified quiet compound.",
-    recorded_by_id: "u-okonkwo",
-    recorded_by_name: "Okonkwo Chukwuma",
-    created_at: new Date().toISOString(),
-  },
-];
-
-const SEED_REGISTERED_CLIENTS: RegisteredClientRecord[] = [
-  {
-    id: "client-acc-1",
-    sector: "Accommodation",
-    client_name: "Blessing Udoh",
-    phone: "+234 814 555 1234",
-    whatsapp_phone: "+234 814 555 1234",
-    email: "blessing.udoh@uni.edu.ng",
-    client_category: "100L Fresher (Pharmacy)",
-    department_or_occupation: "Faculty of Pharmaceutical Sciences",
-    service_or_lodge_acquired: "Peace Haven Lodge - Room 8",
-    area_or_location: "Hilltop Phase 1",
-    amount_paid: "₦280,000",
-    payment_status: "paid_in_full",
-    assigned_staff_name: "Emeka Obi",
-    emergency_or_parent_contact: "Dr. Udoh (Father) - +234 802 333 4444",
-    notes: "Accommodated with zero stress. Keys received from caretaker Elder Samuel.",
-    registered_by_id: "u-kalu",
-    registered_by_name: "Kalu Eze",
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    admin_points_awarded: 2,
-    admin_feedback: "Fully documented client registration with parent contact verified.",
-  },
-  {
-    id: "client-acc-2",
-    sector: "Accommodation",
-    client_name: "Ibrahim Musa",
-    phone: "+234 809 333 4455",
-    whatsapp_phone: "+234 809 333 4455",
-    email: "ibrahim.m@uni.edu.ng",
-    client_category: "100L Fresher (Computer Science)",
-    department_or_occupation: "Faculty of Physical Sciences",
-    service_or_lodge_acquired: "Apex Villa Royale - Room B2",
-    area_or_location: "Odim Gate Area",
-    amount_paid: "₦350,000",
-    payment_status: "paid_in_full",
-    assigned_staff_name: "Chioma Nwosu",
-    emergency_or_parent_contact: "Alhaji Musa - +234 803 111 9988",
-    notes: "Requires generator connectivity for developer workstation setup.",
-    registered_by_id: "u-kalu",
-    registered_by_name: "Kalu Eze",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-    admin_points_awarded: 2,
-  },
-  {
-    id: "client-prop-1",
-    sector: "Properties",
-    client_name: "Engr. Kenneth Alabi",
-    phone: "+234 802 777 9900",
-    whatsapp_phone: "+234 802 777 9900",
-    email: "k.alabi@apexconsult.com",
-    client_category: "Property Buyer / Commercial Investor",
-    department_or_occupation: "Civil Engineering Consultant",
-    service_or_lodge_acquired: "Hilltop Commercial Development Plot 4B",
-    area_or_location: "Hilltop Extension Area",
-    amount_paid: "₦4,500,000 (Initial Trench)",
-    payment_status: "part_payment",
-    assigned_staff_name: "Okoye (Admin)",
-    emergency_or_parent_contact: "Barr. Chike (Legal Rep) - +234 803 888 7766",
-    notes: "Site coordinates surveyed. Title documentation in progress.",
-    registered_by_id: "u-kalu",
-    registered_by_name: "Kalu Eze",
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-    admin_points_awarded: 3,
-  },
-  {
-    id: "client-rent-1",
-    sector: "Rentals",
-    client_name: "Campus Gospel Fellowship",
-    phone: "+234 816 444 7788",
-    whatsapp_phone: "+234 816 444 7788",
-    email: "cgf.chapter@gmail.com",
-    client_category: "Institutional / Event Client",
-    department_or_occupation: "Student Union Association",
-    service_or_lodge_acquired: "500-Capacity Canopy, 300 Chairs & Sound System Set",
-    area_or_location: "Main University Gate Pavilion",
-    amount_paid: "₦180,000",
-    payment_status: "paid_in_full",
-    assigned_staff_name: "Kalu Eze",
-    emergency_or_parent_contact: "Bro. Emmanuel (President) - +234 811 222 3344",
-    notes: "Weekend orientation summit logistics setup booked.",
-    registered_by_id: "u-kalu",
-    registered_by_name: "Kalu Eze",
-    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    id: "client-food-1",
-    sector: "Food",
-    client_name: "Heritage Hostel Students Association",
-    phone: "+234 701 888 3322",
-    whatsapp_phone: "+234 701 888 3322",
-    email: "heritage.hall@uni.edu.ng",
-    client_category: "Hostel Meal Plan Group",
-    department_or_occupation: "Hall Government",
-    service_or_lodge_acquired: "Weekly Dinner Supply & Nutritional Plan (25 Subscribers)",
-    area_or_location: "Ofulonu Zone",
-    amount_paid: "₦150,000",
-    payment_status: "paid_in_full",
-    assigned_staff_name: "Kalu Eze",
-    emergency_or_parent_contact: "Hall Warden Office - +234 805 000 1122",
-    notes: "Delivery starts this Monday at 7:00 PM daily.",
-    registered_by_id: "u-kalu",
-    registered_by_name: "Kalu Eze",
-    created_at: new Date().toISOString(),
-  },
-];
+const SEED_APPLICATIONS: LodgeAgencyApplication[] = [];
+const SEED_STUDENT_INTEL: StudentIntelRecord[] = [];
+const SEED_REGISTERED_CLIENTS: RegisteredClientRecord[] = [];
 
 // ------------------------------------------------------------------------------
 // LOCAL STORAGE HELPERS
@@ -848,6 +490,59 @@ function writeData<T>(key: string, data: T): void {
   } catch {
     // ignore quota errs
   }
+}
+
+/**
+ * Completely purges all cached/demo recordings, resets primary campaign goal to 0,
+ * resets all territory zone counts to 0, and clears worker points to 0.
+ */
+export function resetAllDataToCleanSlate(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(KEYS.GOAL, JSON.stringify(INITIAL_GOAL));
+    localStorage.setItem(KEYS.ZONES, JSON.stringify(INITIAL_ZONES));
+    localStorage.setItem(KEYS.LODGES, JSON.stringify([]));
+    localStorage.setItem(KEYS.LEADS, JSON.stringify([]));
+    localStorage.setItem(KEYS.BLASTS, JSON.stringify([]));
+    localStorage.setItem(KEYS.REP_LOGS, JSON.stringify([]));
+    localStorage.setItem(KEYS.RATINGS, JSON.stringify([]));
+    localStorage.setItem(KEYS.TASKS, JSON.stringify([]));
+    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify([]));
+    localStorage.setItem(KEYS.STUDENT_INTEL, JSON.stringify([]));
+    localStorage.setItem(KEYS.CLIENTS, JSON.stringify([]));
+
+    // Reset user points and cash value to 0, maintaining roles
+    const rawUsers = localStorage.getItem(KEYS.USERS);
+    if (rawUsers) {
+      try {
+        const parsed = JSON.parse(rawUsers) as UserProfile[];
+        const zeroed = parsed.map((u) => ({
+          ...u,
+          total_points: 0,
+          cash_value_earned: 0,
+          rating_average: 5.0,
+        }));
+        localStorage.setItem(KEYS.USERS, JSON.stringify(zeroed));
+      } catch {
+        localStorage.setItem(KEYS.USERS, JSON.stringify(SEED_USERS));
+      }
+    } else {
+      localStorage.setItem(KEYS.USERS, JSON.stringify(SEED_USERS));
+    }
+
+    localStorage.setItem("kingsok_clean_zero_v3", "true");
+  } catch (err) {
+    console.error("Failed to reset clean slate:", err);
+  }
+}
+
+// Auto-run clean slate migration for any existing browser sessions with old demo data
+if (typeof window !== "undefined") {
+  try {
+    if (!localStorage.getItem("kingsok_clean_zero_v3")) {
+      resetAllDataToCleanSlate();
+    }
+  } catch {}
 }
 
 // ------------------------------------------------------------------------------
@@ -950,7 +645,7 @@ export async function getLodges(): Promise<LodgeAsset[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         writeData(KEYS.LODGES, data);
         return data as LodgeAsset[];
       }
@@ -1053,7 +748,7 @@ export async function getStudentIntelRecords(): Promise<StudentIntelRecord[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         writeData(KEYS.STUDENT_INTEL, data);
         return data as StudentIntelRecord[];
       }
@@ -1144,7 +839,7 @@ export async function getClientLeads(): Promise<ClientLead[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         writeData(KEYS.LEADS, data);
         return data as ClientLead[];
       }
@@ -1286,7 +981,7 @@ export async function getCustomerRepLogs(): Promise<CustomerRepLog[]> {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         writeData(KEYS.REP_LOGS, data);
         return data as CustomerRepLog[];
       }
@@ -1351,7 +1046,7 @@ export async function getRegisteredClients(): Promise<RegisteredClientRecord[]> 
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         writeData(KEYS.CLIENTS, data);
         return data as RegisteredClientRecord[];
       }
