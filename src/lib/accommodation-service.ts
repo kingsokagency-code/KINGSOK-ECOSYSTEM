@@ -12,6 +12,8 @@
  * ==============================================================================
  */
 
+import { getSupabaseClient } from "./supabase/client";
+
 export type WorkerRole = 'area_controller' | 'hotliner' | 'customer_rep' | 'admin';
 
 export interface UserProfile {
@@ -940,11 +942,27 @@ export async function updateUserRoles(userId: string, newRoles: WorkerRole[]): P
 
 // Lodges (Area Controller)
 export async function getLodges(): Promise<LodgeAsset[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("lodges")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        writeData(KEYS.LODGES, data);
+        return data as LodgeAsset[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetch lodges failed, using local cache", err);
+    }
+  }
   return readData<LodgeAsset[]>(KEYS.LODGES, SEED_LODGES);
 }
 
 export async function createLodge(data: Omit<LodgeAsset, "id" | "created_at">): Promise<LodgeAsset> {
-  const lodges = await getLodges();
+  const lodges = readData<LodgeAsset[]>(KEYS.LODGES, SEED_LODGES);
   const newLodge: LodgeAsset = {
     ...data,
     id: "lodge-" + Date.now().toString(36),
@@ -955,18 +973,33 @@ export async function createLodge(data: Omit<LodgeAsset, "id" | "created_at">): 
 
   // Update current goal progress if vacancies were found
   if (newLodge.vacancy_count > 0) {
-    const goal = await getCampaignGoal();
-    writeData(KEYS.GOAL, {
-      ...goal,
-      current_accommodated: goal.current_accommodated + 1,
-    });
+    try {
+      const goal = await getCampaignGoal();
+      writeData(KEYS.GOAL, {
+        ...goal,
+        current_accommodated: goal.current_accommodated + 1,
+      });
+    } catch {}
+  }
+
+  // Sync to Supabase
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("lodges").insert([newLodge]);
+    } catch (err) {
+      console.warn("Supabase insert lodge error (persisted locally):", err);
+    }
   }
 
   return newLodge;
 }
 
+export const createLodgeAsset = createLodge;
+export const addLodgeAsset = createLodge;
+
 export async function updateLodgeAsset(id: string, updates: Partial<LodgeAsset>): Promise<LodgeAsset> {
-  const lodges = await getLodges();
+  const lodges = readData<LodgeAsset[]>(KEYS.LODGES, SEED_LODGES);
   const index = lodges.findIndex((l) => l.id === id);
   if (index === -1) throw new Error("Lodge not found");
 
@@ -976,14 +1009,34 @@ export async function updateLodgeAsset(id: string, updates: Partial<LodgeAsset>)
   };
   lodges[index] = updatedLodge;
   writeData(KEYS.LODGES, lodges);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("lodges").update(updates).eq("id", id);
+    } catch (err) {
+      console.warn("Supabase update lodge error (persisted locally):", err);
+    }
+  }
+
   return updatedLodge;
 }
 
 export async function deleteLodgeAsset(id: string): Promise<boolean> {
-  const lodges = await getLodges();
+  const lodges = readData<LodgeAsset[]>(KEYS.LODGES, SEED_LODGES);
   const filtered = lodges.filter((l) => l.id !== id);
   if (filtered.length === lodges.length) return false;
   writeData(KEYS.LODGES, filtered);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("lodges").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Supabase delete lodge error:", err);
+    }
+  }
+
   return true;
 }
 
@@ -992,19 +1045,45 @@ export async function deleteLodgeAsset(id: string): Promise<boolean> {
 // ------------------------------------------------------------------------------
 
 export async function getStudentIntelRecords(): Promise<StudentIntelRecord[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("student_intel")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        writeData(KEYS.STUDENT_INTEL, data);
+        return data as StudentIntelRecord[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetch student_intel failed, using local cache", err);
+    }
+  }
   return readData<StudentIntelRecord[]>(KEYS.STUDENT_INTEL, SEED_STUDENT_INTEL);
 }
 
 export async function createStudentIntelRecord(
   data: Omit<StudentIntelRecord, "id" | "created_at">
 ): Promise<StudentIntelRecord> {
-  const records = await getStudentIntelRecords();
+  const records = readData<StudentIntelRecord[]>(KEYS.STUDENT_INTEL, SEED_STUDENT_INTEL);
   const newRecord: StudentIntelRecord = {
     ...data,
     id: "intel-" + Date.now().toString(36),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.STUDENT_INTEL, [newRecord, ...records]);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("student_intel").insert([newRecord]);
+    } catch (err) {
+      console.warn("Supabase insert student_intel error (persisted locally):", err);
+    }
+  }
+
   return newRecord;
 }
 
@@ -1014,7 +1093,7 @@ export async function updateStudentIntelRecord(
   id: string,
   updates: Partial<StudentIntelRecord>
 ): Promise<StudentIntelRecord> {
-  const records = await getStudentIntelRecords();
+  const records = readData<StudentIntelRecord[]>(KEYS.STUDENT_INTEL, SEED_STUDENT_INTEL);
   const index = records.findIndex((r) => r.id === id);
   if (index === -1) throw new Error("Student intel record not found");
 
@@ -1024,24 +1103,60 @@ export async function updateStudentIntelRecord(
   };
   records[index] = updated;
   writeData(KEYS.STUDENT_INTEL, records);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("student_intel").update(updates).eq("id", id);
+    } catch (err) {
+      console.warn("Supabase update student_intel error (persisted locally):", err);
+    }
+  }
+
   return updated;
 }
 
 export async function deleteStudentIntelRecord(id: string): Promise<boolean> {
-  const records = await getStudentIntelRecords();
+  const records = readData<StudentIntelRecord[]>(KEYS.STUDENT_INTEL, SEED_STUDENT_INTEL);
   const filtered = records.filter((r) => r.id !== id);
   if (filtered.length === records.length) return false;
   writeData(KEYS.STUDENT_INTEL, filtered);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("student_intel").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Supabase delete student_intel error:", err);
+    }
+  }
+
   return true;
 }
 
 // Client Leads (Hotliners)
 export async function getClientLeads(): Promise<ClientLead[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("client_leads")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        writeData(KEYS.LEADS, data);
+        return data as ClientLead[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetch client_leads failed, using local cache", err);
+    }
+  }
   return readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
 }
 
 export async function createClientLead(data: Omit<ClientLead, "id" | "created_at">): Promise<ClientLead> {
-  const leads = await getClientLeads();
+  const leads = readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
   const newLead: ClientLead = {
     ...data,
     id: "lead-" + Date.now().toString(36),
@@ -1050,38 +1165,81 @@ export async function createClientLead(data: Omit<ClientLead, "id" | "created_at
   writeData(KEYS.LEADS, [newLead, ...leads]);
 
   // Update reach in campaign goal
-  const goal = await getCampaignGoal();
-  writeData(KEYS.GOAL, {
-    ...goal,
-    current_freshers_reach: goal.current_freshers_reach + 1,
-  });
+  try {
+    const goal = await getCampaignGoal();
+    writeData(KEYS.GOAL, {
+      ...goal,
+      current_freshers_reach: goal.current_freshers_reach + 1,
+    });
+  } catch {}
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("client_leads").insert([newLead]);
+    } catch (err) {
+      console.warn("Supabase insert client_leads error (persisted locally):", err);
+    }
+  }
 
   return newLead;
 }
 
+export const addClientLead = createClientLead;
+
 export async function updateLeadStatus(leadId: string, status: ClientLead["status"]): Promise<ClientLead> {
-  const leads = await getClientLeads();
+  const leads = readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
   const lead = leads.find((l) => l.id === leadId);
   if (!lead) throw new Error("Lead not found");
   lead.status = status;
   writeData(KEYS.LEADS, leads);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("client_leads").update({ status }).eq("id", leadId);
+    } catch (err) {
+      console.warn("Supabase update lead status error:", err);
+    }
+  }
+
   return lead;
 }
 
 export async function updateClientLead(id: string, updates: Partial<ClientLead>): Promise<ClientLead> {
-  const leads = await getClientLeads();
+  const leads = readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
   const idx = leads.findIndex((l) => l.id === id);
   if (idx === -1) throw new Error("Lead not found");
   leads[idx] = { ...leads[idx], ...updates };
   writeData(KEYS.LEADS, leads);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("client_leads").update(updates).eq("id", id);
+    } catch (err) {
+      console.warn("Supabase update client_lead error:", err);
+    }
+  }
+
   return leads[idx];
 }
 
 export async function deleteClientLead(id: string): Promise<boolean> {
-  const leads = await getClientLeads();
+  const leads = readData<ClientLead[]>(KEYS.LEADS, SEED_LEADS);
   const filtered = leads.filter((l) => l.id !== id);
   if (filtered.length === leads.length) return false;
   writeData(KEYS.LEADS, filtered);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("client_leads").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Supabase delete client_lead error:", err);
+    }
+  }
+
   return true;
 }
 
@@ -1099,11 +1257,13 @@ export async function recordWhatsAppBlast(data: Omit<WhatsAppBlastLog, "id" | "c
   };
   writeData(KEYS.BLASTS, [newBlast, ...blasts]);
 
-  const goal = await getCampaignGoal();
-  writeData(KEYS.GOAL, {
-    ...goal,
-    current_freshers_reach: goal.current_freshers_reach + data.freshers_reached_estimate,
-  });
+  try {
+    const goal = await getCampaignGoal();
+    writeData(KEYS.GOAL, {
+      ...goal,
+      current_freshers_reach: goal.current_freshers_reach + data.freshers_reached_estimate,
+    });
+  } catch {}
 
   return newBlast;
 }
@@ -1118,25 +1278,63 @@ export async function deleteWhatsAppBlast(id: string): Promise<boolean> {
 
 // Customer Rep Logs
 export async function getCustomerRepLogs(): Promise<CustomerRepLog[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("customer_rep_logs")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        writeData(KEYS.REP_LOGS, data);
+        return data as CustomerRepLog[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetch customer_rep_logs failed, using local cache", err);
+    }
+  }
   return readData<CustomerRepLog[]>(KEYS.REP_LOGS, SEED_REP_LOGS);
 }
 
 export async function createCustomerRepLog(data: Omit<CustomerRepLog, "id" | "created_at">): Promise<CustomerRepLog> {
-  const logs = await getCustomerRepLogs();
+  const logs = readData<CustomerRepLog[]>(KEYS.REP_LOGS, SEED_REP_LOGS);
   const newLog: CustomerRepLog = {
     ...data,
     id: "rep-" + Date.now().toString(36),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.REP_LOGS, [newLog, ...logs]);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("customer_rep_logs").insert([newLog]);
+    } catch (err) {
+      console.warn("Supabase insert customer_rep_logs error (persisted locally):", err);
+    }
+  }
+
   return newLog;
 }
 
+export const addCustomerRepLog = createCustomerRepLog;
+
 export async function deleteCustomerRepLog(id: string): Promise<boolean> {
-  const logs = await getCustomerRepLogs();
+  const logs = readData<CustomerRepLog[]>(KEYS.REP_LOGS, SEED_REP_LOGS);
   const filtered = logs.filter((l) => l.id !== id);
   if (filtered.length === logs.length) return false;
   writeData(KEYS.REP_LOGS, filtered);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("customer_rep_logs").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Supabase delete customer_rep_logs error:", err);
+    }
+  }
+
   return true;
 }
 
@@ -1145,29 +1343,56 @@ export async function deleteCustomerRepLog(id: string): Promise<boolean> {
 // ------------------------------------------------------------------------------
 
 export async function getRegisteredClients(): Promise<RegisteredClientRecord[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("registered_clients")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        writeData(KEYS.CLIENTS, data);
+        return data as RegisteredClientRecord[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetch registered_clients failed, using local cache", err);
+    }
+  }
   return readData<RegisteredClientRecord[]>(KEYS.CLIENTS, SEED_REGISTERED_CLIENTS);
 }
 
 export async function createRegisteredClient(
   data: Omit<RegisteredClientRecord, "id" | "created_at">
 ): Promise<RegisteredClientRecord> {
-  const clients = await getRegisteredClients();
+  const clients = readData<RegisteredClientRecord[]>(KEYS.CLIENTS, SEED_REGISTERED_CLIENTS);
   const newClient: RegisteredClientRecord = {
     ...data,
     id: "client-" + Date.now().toString(36),
     created_at: new Date().toISOString(),
   };
   writeData(KEYS.CLIENTS, [newClient, ...clients]);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("registered_clients").insert([newClient]);
+    } catch (err) {
+      console.warn("Supabase insert registered_clients error (persisted locally):", err);
+    }
+  }
+
   return newClient;
 }
 
 export const registerClient = createRegisteredClient;
+export const addRegisteredClient = createRegisteredClient;
 
 export async function updateRegisteredClient(
   id: string,
   updates: Partial<RegisteredClientRecord>
 ): Promise<RegisteredClientRecord> {
-  const clients = await getRegisteredClients();
+  const clients = readData<RegisteredClientRecord[]>(KEYS.CLIENTS, SEED_REGISTERED_CLIENTS);
   const index = clients.findIndex((c) => c.id === id);
   if (index === -1) throw new Error("Client not found");
 
@@ -1177,14 +1402,34 @@ export async function updateRegisteredClient(
   };
   clients[index] = updated;
   writeData(KEYS.CLIENTS, clients);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("registered_clients").update(updates).eq("id", id);
+    } catch (err) {
+      console.warn("Supabase update registered_clients error (persisted locally):", err);
+    }
+  }
+
   return updated;
 }
 
 export async function deleteRegisteredClient(id: string): Promise<boolean> {
-  const clients = await getRegisteredClients();
+  const clients = readData<RegisteredClientRecord[]>(KEYS.CLIENTS, SEED_REGISTERED_CLIENTS);
   const filtered = clients.filter((c) => c.id !== id);
   if (filtered.length === clients.length) return false;
   writeData(KEYS.CLIENTS, filtered);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("registered_clients").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Supabase delete registered_clients error:", err);
+    }
+  }
+
   return true;
 }
 

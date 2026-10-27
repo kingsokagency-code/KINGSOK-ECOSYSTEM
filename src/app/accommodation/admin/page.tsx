@@ -63,6 +63,8 @@ import {
   Trash2,
   Calendar,
   AlertCircle,
+  Download,
+  FileSpreadsheet,
   MapPin,
   Tag,
   GraduationCap,
@@ -479,6 +481,232 @@ export default function AdminCommandCenter() {
   const totalPointsIssued = users.reduce((acc, curr) => acc + (curr.total_points || 0), 0);
   const totalCashEarned = totalPointsIssued * 1000;
 
+  // Export Modal State & CSV Helpers
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  const exportToCSV = (
+    filename: string,
+    headers: string[],
+    rows: (string | number | undefined | null)[][]
+  ) => {
+    const escapeCell = (val: string | number | undefined | null) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).trim();
+      if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return `"${str}"`;
+    };
+
+    const csvContent =
+      "\uFEFF" +
+      headers.map(escapeCell).join(",") +
+      "\n" +
+      rows.map((row) => row.map(escapeCell).join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${filename}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setNotification(`Downloaded ${filename}.csv for Excel!`);
+  };
+
+  // 1. Export Lodges & Caretakers
+  const handleExportLodges = () => {
+    const headers = [
+      "Lodge Name",
+      "Campus Zone / Area",
+      "Street Address",
+      "Rent Per Session",
+      "Current Vacancies",
+      "Is Vacant Now",
+      "Caretaker Name",
+      "Caretaker Phone",
+      "Lodge President",
+      "President Phone",
+      "Shop Contact",
+      "Water Reliability",
+      "Light Reliability",
+      "Room Types",
+      "Security Features",
+      "Final-Year Students Present",
+      "Final-Year Items & Details",
+      "Recorded By",
+      "Date Recorded",
+      "Admin Points Awarded",
+      "Admin Feedback",
+    ];
+
+    const rows = lodges.map((l) => [
+      l.name,
+      l.area,
+      l.address,
+      l.rent_per_session,
+      l.vacancy_count,
+      l.is_vacant_now ? "YES" : "NO",
+      l.caretaker_name,
+      l.caretaker_phone,
+      l.lodge_president_name || "N/A",
+      l.lodge_president_phone || "N/A",
+      l.shop_owner_contact || "N/A",
+      l.water_reliability,
+      l.light_reliability,
+      l.room_types || "N/A",
+      l.security_features || "N/A",
+      l.has_final_year_students ? "YES" : "NO",
+      l.final_year_details || "N/A",
+      l.recorded_by_name,
+      new Date(l.created_at).toLocaleDateString(),
+      l.admin_points_awarded || 0,
+      l.admin_feedback || "None",
+    ]);
+
+    exportToCSV("KINGSOK_Lodges_Directory", headers, rows);
+  };
+
+  // 2. Export Final-Year & Transition Student Intel
+  const handleExportStudentIntel = () => {
+    const headers = [
+      "Intel Category",
+      "Student Name",
+      "Phone Number",
+      "Current Lodge",
+      "Area / Zone",
+      "Room Number / Type",
+      "Expected Move Date",
+      "Room Opening Up",
+      "Items For Sale",
+      "Reason For Moving",
+      "Preferred New Area",
+      "Target Budget",
+      "Desired New Room Type",
+      "Special Notes",
+      "Recorded By",
+      "Date Recorded",
+      "Admin Points Awarded",
+      "Admin Feedback",
+    ];
+
+    const rows = studentIntel.map((s) => [
+      s.student_type === "final_year" ? "Final-Year (Graduating)" : "Transition (Relocating)",
+      s.student_name,
+      s.phone,
+      s.current_lodge_name,
+      s.area,
+      s.room_number_or_type || "N/A",
+      s.expected_move_date,
+      s.room_opening_up ? "YES" : "NO",
+      s.items_for_sale || "None",
+      s.reason_for_moving || "N/A",
+      s.preferred_new_area || "N/A",
+      s.target_budget || "N/A",
+      s.desired_new_room_type || "N/A",
+      s.notes || "None",
+      s.recorded_by_name,
+      new Date(s.created_at).toLocaleDateString(),
+      s.admin_points_awarded || 0,
+      s.admin_feedback || "None",
+    ]);
+
+    exportToCSV("KINGSOK_Student_Intel", headers, rows);
+  };
+
+  // 3. Export Registered Clients Across Sectors
+  const handleExportClients = () => {
+    const headers = [
+      "Sector",
+      "Client Name",
+      "Phone Number",
+      "WhatsApp Phone",
+      "Email Address",
+      "Client Category",
+      "Department / Occupation",
+      "Service / Lodge Acquired",
+      "Location / Area",
+      "Payment Status",
+      "Amount Paid",
+      "Assigned Staff",
+      "Emergency / Parent Contact",
+      "Client Notes",
+      "Registered By",
+      "Date Recorded",
+      "Admin Points Awarded",
+      "Admin Feedback",
+    ];
+
+    const rows = registeredClients.map((c) => [
+      c.sector,
+      c.client_name,
+      c.phone,
+      c.whatsapp_phone || "N/A",
+      c.email || "N/A",
+      c.client_category,
+      c.department_or_occupation || "N/A",
+      c.service_or_lodge_acquired,
+      c.area_or_location,
+      c.payment_status.replace("_", " ").toUpperCase(),
+      c.amount_paid || "N/A",
+      c.assigned_staff_name || "N/A",
+      c.emergency_or_parent_contact || "N/A",
+      c.notes || "None",
+      c.registered_by_name,
+      new Date(c.created_at).toLocaleDateString(),
+      c.admin_points_awarded || 0,
+      c.admin_feedback || "None",
+    ]);
+
+    exportToCSV("KINGSOK_Registered_Clients", headers, rows);
+  };
+
+  // 4. Export Fresher Leads
+  const handleExportLeads = () => {
+    const headers = [
+      "Student / Fresher Name",
+      "Phone Number",
+      "Preferred Campus Area",
+      "Budget Range",
+      "Desired Room Type",
+      "Conversion Stage",
+      "Assigned Controller",
+      "Special Notes / Preferences",
+      "Hotliner Staff",
+      "Date Recorded",
+      "Admin Points Awarded",
+      "Admin Feedback",
+    ];
+
+    const rows = leads.map((l) => [
+      l.fresher_name,
+      l.phone,
+      l.preferred_area,
+      l.budget_range,
+      l.desired_room_type,
+      l.status.replace("_", " ").toUpperCase(),
+      l.assigned_controller_name || "N/A",
+      l.notes || "None",
+      l.hotliner_name,
+      new Date(l.created_at).toLocaleDateString(),
+      l.admin_points_awarded || 0,
+      l.admin_feedback || "None",
+    ]);
+
+    exportToCSV("KINGSOK_Fresher_Leads", headers, rows);
+  };
+
+  // 5. Export All Master Datasets sequentially
+  const handleExportAll = () => {
+    handleExportLodges();
+    setTimeout(() => handleExportStudentIntel(), 300);
+    setTimeout(() => handleExportClients(), 600);
+    setTimeout(() => handleExportLeads(), 900);
+    setNotification("Exporting all 4 KINGSOK datasets for Excel...");
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
       <AccommodationNav />
@@ -519,6 +747,14 @@ export default function AdminCommandCenter() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <button
+                onClick={() => setExportModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs font-bold transition-colors shadow-sm cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-amber-400" />
+                <span>Export (Excel / CSV)</span>
+              </button>
+
               <button
                 onClick={() => setAddWorkerModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold border border-neutral-700 transition-colors shadow-sm cursor-pointer"
@@ -759,6 +995,15 @@ export default function AdminCommandCenter() {
                   }`}
                 >
                   Leads ({leads.length})
+                </button>
+
+                <button
+                  onClick={() => setExportModalOpen(true)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-amber-400/10 text-amber-300 border border-amber-400/30 hover:bg-amber-400/20 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  title="Export Data to Excel/CSV"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Export CSV</span>
                 </button>
               </div>
             </div>
@@ -1646,6 +1891,144 @@ export default function AdminCommandCenter() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* EXPORT DATA (EXCEL / CSV) MODAL */}
+        {/* ============================================================== */}
+        {exportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-neutral-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-neutral-800 space-y-5 text-white max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center font-bold">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-white text-base">
+                      Export Data (Excel & CSV)
+                    </h3>
+                    <p className="text-[11px] text-neutral-400">
+                      Clean UTF-8 encoded files formatted for Microsoft Excel & Google Sheets
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setExportModalOpen(false)}
+                  className="text-neutral-400 hover:text-white p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                {/* 1. Lodges */}
+                <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <Building className="w-4 h-4 text-sky-400" />
+                      <span>Lodges & Caretakers Directory</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {lodges.length} records &bull; Names, zones, caretaker contacts, vacancies, rent, light/water truth
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportLodges}
+                    className="px-3.5 py-2 rounded-xl bg-sky-950 text-sky-300 border border-sky-800 hover:bg-sky-900 text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
+
+                {/* 2. Student Intel */}
+                <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-purple-400" />
+                      <span>Final-Year & Transition Intel</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {studentIntel.length} records &bull; Vacating dates, items for sale, reasons for moving, budgets
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportStudentIntel}
+                    className="px-3.5 py-2 rounded-xl bg-purple-950 text-purple-300 border border-purple-800 hover:bg-purple-900 text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
+
+                {/* 3. Registered Clients */}
+                <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-emerald-400" />
+                      <span>Registered Clients (Cross-Sector)</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {registeredClients.length} records &bull; Across Accommodation, Properties, Rentals, Food
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportClients}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 hover:bg-emerald-900 text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
+
+                {/* 4. Fresher Leads */}
+                <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <Radio className="w-4 h-4 text-blue-400" />
+                      <span>Fresher Inquiries & Leads</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {leads.length} records &bull; Contact info, areas, budgets, room types, conversion stages
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportLeads}
+                    className="px-3.5 py-2 rounded-xl bg-blue-950 text-blue-300 border border-blue-800 hover:bg-blue-900 text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Master Export Action */}
+              <div className="pt-3 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-[11px] text-neutral-400">
+                  Total Ecosystem Records: <strong className="text-white">{lodges.length + studentIntel.length + registeredClients.length + leads.length}</strong>
+                </span>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setExportModalOpen(false)}
+                    className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-neutral-400 hover:text-white rounded-xl transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExportAll}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-lg transition-colors cursor-pointer border border-emerald-400"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export All Datasets</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

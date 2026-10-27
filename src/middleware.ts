@@ -27,7 +27,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth/callback");
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   // If Supabase environment is not yet configured, allow accessing public pages
   if (!supabaseUrl || !supabaseAnonKey) {
