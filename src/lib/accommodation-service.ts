@@ -318,7 +318,7 @@ const SEED_USERS: UserProfile[] = [
     id: "u-okoye",
     name: "Okoye (Admin)",
     email: "okoyek989@gmail.com",
-    phone: "08033977677",
+    phone: "08103415600",
     roles: ["admin", "area_controller", "hotliner", "customer_rep"],
     total_points: 0,
     cash_value_earned: 0,
@@ -588,9 +588,9 @@ export async function saveStrategy(strategy: Strategy): Promise<void> {
 export async function getUsers(): Promise<UserProfile[]> {
   const list = readData<UserProfile[]>(KEYS.USERS, SEED_USERS);
   const okoye = list.find((u) => u.id === "u-okoye" || u.roles.includes("admin"));
-  if (okoye && (okoye.email !== "okoyek989@gmail.com" || okoye.phone !== "08033977677")) {
+  if (okoye && (okoye.email !== "okoyek989@gmail.com" || okoye.phone !== "08103415600")) {
     okoye.email = "okoyek989@gmail.com";
-    okoye.phone = "08033977677";
+    okoye.phone = "08103415600";
     writeData(KEYS.USERS, list);
   }
   return list;
@@ -699,6 +699,9 @@ export async function verifyAndLoginAdmin(credentials: {
   const cleanEmail = credentials.email.trim().toLowerCase();
   const pass = credentials.passcodeOrPassword.trim();
   const validAdminPasscodes = [
+    "08103415600",
+    "+2348103415600",
+    "2348103415600",
     "08033977677",
     "+2348033977677",
     "2348033977677",
@@ -724,7 +727,7 @@ export async function verifyAndLoginAdmin(credentials: {
 
   if (adminUser) {
     adminUser.email = "okoyek989@gmail.com";
-    adminUser.phone = "08033977677";
+    adminUser.phone = "08103415600";
     writeData(KEYS.USERS, users);
   }
 

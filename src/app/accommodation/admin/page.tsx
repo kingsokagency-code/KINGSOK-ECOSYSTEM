@@ -833,13 +833,13 @@ export default function AdminCommandCenter() {
                   <label className="block text-xs font-bold uppercase text-slate-700">
                     Executive Passcode / Phone
                   </label>
-                  <span className="text-[10px] text-slate-400 font-mono">08033977677</span>
+                  <span className="text-[10px] text-slate-400 font-mono">08103415600</span>
                 </div>
                 <input
                   type="password"
                   value={passcodeInput}
                   onChange={(e) => setPasscodeInput(e.target.value)}
-                  placeholder="Enter passcode (08033977677)"
+                  placeholder="Enter passcode (08103415600)"
                   required
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
                 />

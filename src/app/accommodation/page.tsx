@@ -197,7 +197,7 @@ export default function AccommodationPortalHome() {
                 </p>
                 <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
                   <a
-                    href={`https://wa.me/2348033977677?text=Hello%20Admin%20Okoye,%20I%20have%20registered%20as%20a%20staff%20member%20on%20KINGSOK%20Ecosystem.%20My%20name%20is%20${encodeURIComponent(currentUser.name)}%20(${encodeURIComponent(currentUser.phone)}).%20Please%20assign%20my%20role.`}
+                    href={`https://wa.me/2348103415600?text=Hello%20Admin%20Okoye,%20I%20have%20registered%20as%20a%20staff%20member%20on%20KINGSOK%20Ecosystem.%20My%20name%20is%20${encodeURIComponent(currentUser.name)}%20(${encodeURIComponent(currentUser.phone)}).%20Please%20assign%20my%20role.`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs transition-colors inline-flex items-center gap-1.5"
