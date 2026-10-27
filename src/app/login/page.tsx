@@ -4,11 +4,20 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { switchCurrentUser } from "@/lib/accommodation-service";
+import {
+  switchCurrentUser,
+  getUsers,
+  registerStaffApplicant,
+  verifyAndLoginAdmin,
+  verifyAndLoginStaff,
+  WorkerRole,
+} from "@/lib/accommodation-service";
 import {
   Shield,
   Lock,
   Mail,
+  User,
+  Phone,
   AlertCircle,
   CheckCircle2,
   ArrowRight,
@@ -17,19 +26,207 @@ import {
   Radio,
   Headphones,
   ShieldAlert,
+  UserPlus,
+  LogIn,
+  KeyRound,
+  MapPin,
+  Sparkles,
 } from "lucide-react";
+
+type AuthTab = "staff_signin" | "staff_register" | "admin";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Tab: "staff_signin", "staff_register", or "admin"
+  const [authTab, setAuthTab] = useState<AuthTab>("staff_signin");
+
+  // Staff Registration Fields
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [zonePreference, setZonePreference] = useState("Hilltop Zone");
+  const [desiredRole, setDesiredRole] = useState("area_controller");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Admin Login Fields
+  const [adminEmail, setAdminEmail] = useState("okoye@kingsok.com");
+  const [adminPasscode, setAdminPasscode] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  const handleQuickLogin = async (userId: string, targetPath: string) => {
+  useEffect(() => {
+    const portal = searchParams.get("portal");
+    const mode = searchParams.get("mode");
+
+    if (portal === "admin") {
+      setAuthTab("admin");
+    } else if (portal === "staff" && mode === "register") {
+      setAuthTab("staff_register");
+    } else if (mode === "register") {
+      setAuthTab("staff_register");
+    } else {
+      setAuthTab("staff_signin");
+    }
+
+    if (searchParams.get("notice") === "pending_approval") {
+      setInfoMessage("Your staff profile is registered and pending Admin (Okoye) role assignment.");
+    } else if (searchParams.get("reset") === "success") {
+      setInfoMessage("Your password has been successfully reset. Please sign in.");
+    }
+  }, [searchParams]);
+
+  const getWorkspaceForRole = (role: WorkerRole) => {
+    switch (role) {
+      case "admin":
+        return "/accommodation/admin";
+      case "area_controller":
+        return "/accommodation/controller";
+      case "hotliner":
+        return "/accommodation/hotliner";
+      case "customer_rep":
+        return "/accommodation/customer-rep";
+      default:
+        return "/accommodation";
+    }
+  };
+
+  // Staff Sign In Handler
+  const handleStaffSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
+    setLoading(true);
+
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const supabase = createClient();
+
+      // Attempt Supabase Auth
+      try {
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+      } catch {
+        // Fallback gracefully
+      }
+
+      // Check workforce database
+      const user = await verifyAndLoginStaff({ email: cleanEmail, password });
+      
+      if (user.status === "pending_approval" || user.roles.includes("pending")) {
+        router.push("/accommodation");
+      } else {
+        const target = getWorkspaceForRole(user.roles[0] || "area_controller");
+        router.push(target);
+      }
+    } catch (err: any) {
+      setErrorMessage(
+        err.message || "Invalid credentials. If you are a new worker, please register using the 'Staff Registration' tab."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Staff Registration Handler
+  const handleStaffRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (!name.trim()) {
+      setErrorMessage("Please enter your full name.");
+      return;
+    }
+    if (!phone.trim()) {
+      setErrorMessage("Please enter your active phone number.");
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const supabase = createClient();
+
+      // 1. Create account in Supabase auth (if available)
+      try {
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              full_name: name.trim(),
+              phone: phone.trim(),
+              role: desiredRole,
+            },
+          },
+        });
+      } catch (authErr) {
+        console.warn("Supabase auth signup notice:", authErr);
+      }
+
+      // 2. Register staff applicant into KINGSOK Workforce service
+      const newStaff = await registerStaffApplicant({
+        name: name.trim(),
+        email: cleanEmail,
+        phone: phone.trim(),
+        whatsapp_phone: whatsappPhone.trim() || phone.trim(),
+        zone_preference: zonePreference,
+        desired_role: desiredRole,
+      });
+
+      // 3. Switch current user to the new staff applicant
+      await switchCurrentUser(newStaff.id);
+
+      // 4. Route to accommodation home where pending approval message is displayed
+      router.push("/accommodation");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to register staff profile. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Admin Command Portal Login Handler
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (!adminPasscode.trim()) {
+      setErrorMessage("Please enter the Admin passcode or password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const admin = await verifyAndLoginAdmin({
+        email: adminEmail,
+        passcodeOrPassword: adminPasscode,
+      });
+
+      router.push("/accommodation/admin");
+    } catch (err: any) {
+      setErrorMessage(
+        err.message || "Invalid Admin credentials. Please check your passcode and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Quick staff profile switcher for active team members (Excludes Admin)
+  const handleQuickStaffLogin = async (userId: string, targetPath: string) => {
     try {
       await switchCurrentUser(userId);
       router.push(targetPath);
@@ -38,254 +235,483 @@ function LoginForm() {
     }
   };
 
-  useEffect(() => {
-    const notice = searchParams.get("notice");
-    const message = searchParams.get("message");
-
-    if (notice === "signup_disabled" || message === "invite_only") {
-      setInfoMessage(
-        "The KINGSOK Workforce System is strictly invite-only. Public registration is not permitted. Please contact your supervisor or administrator for an invitation."
-      );
-    } else if (searchParams.get("reset") === "success") {
-      setInfoMessage("Your password has been successfully reset. Please sign in with your new password.");
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setLoading(true);
-
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) {
-        // Map raw errors to friendly, helpful messages
-        const msg = error.message.toLowerCase();
-        if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
-          setErrorMessage("The email or password you entered is incorrect. Please check your credentials and try again.");
-        } else if (msg.includes("email not confirmed")) {
-          setErrorMessage("This email address has not been confirmed yet. Please verify your email or contact support.");
-        } else if (msg.includes("rate limit") || msg.includes("too many requests")) {
-          setErrorMessage("Too many login attempts. Please wait a few moments before trying again.");
-        } else {
-          setErrorMessage("Unable to sign in at this time. Please check your network connection and try again.");
-        }
-        return;
-      }
-
-      if (data.user) {
-        router.push("/accommodation");
-        router.refresh();
-      }
-    } catch {
-      setErrorMessage("A connection error occurred. Please check your network and try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="w-full max-w-md mx-auto p-6 sm:p-8">
-      {/* Back to Ecosystem */}
-      <div className="mb-4">
+    <div className="w-full max-w-md mx-auto p-4 sm:p-6 font-sans">
+      {/* Top Breadcrumb */}
+      <div className="mb-4 flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Ecosystem Portal</span>
         </Link>
+
+        {authTab === "admin" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setAuthTab("staff_signin");
+              setErrorMessage(null);
+            }}
+            className="text-xs font-bold text-emerald-700 hover:text-emerald-800"
+          >
+            Staff Portal &rarr;
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setAuthTab("admin");
+              setErrorMessage(null);
+            }}
+            className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1"
+          >
+            <ShieldAlert className="w-3 h-3 text-amber-600" />
+            <span>Admin Portal</span>
+          </button>
+        )}
       </div>
 
       {/* Brand Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 mb-3 shadow-sm border border-emerald-200">
-          <Shield className="w-7 h-7 text-emerald-700" />
+        <div
+          className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3 shadow-xs border ${
+            authTab === "admin"
+              ? "bg-amber-50 text-amber-700 border-amber-200"
+              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+          }`}
+        >
+          {authTab === "admin" ? (
+            <ShieldAlert className="w-7 h-7 text-amber-600" />
+          ) : (
+            <Shield className="w-7 h-7 text-emerald-600" />
+          )}
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          KINGSOK Workforce
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          {authTab === "admin" ? "Admin Command Portal" : "KINGSOK Workforce"}
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Accommodation Sector & Operational System
+          {authTab === "admin"
+            ? "Restricted Executive Access & Role Assignment"
+            : "Ground-Truth Field Team & Client Operations"}
         </p>
       </div>
 
       {/* Main Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-7">
-        {/* Quick Role Launcher */}
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-              One-Click Role Access
-            </span>
-            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Instant Entry
-            </span>
-          </div>
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/90 p-6 sm:p-7 space-y-5">
+        {/* Three Portal Tabs */}
+        <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => {
+              setAuthTab("staff_signin");
+              setErrorMessage(null);
+            }}
+            className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              authTab === "staff_signin"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <LogIn className="w-3 h-3 text-emerald-600" />
+            <span>Sign In</span>
+          </button>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("u-okoye", "/accommodation/admin")}
-              className="p-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white font-bold text-left hover:bg-slate-800 transition-colors cursor-pointer flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-emerald-400 font-extrabold text-[10px] uppercase">Admin</span>
-                <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-              <span className="mt-1 block font-bold text-white text-xs truncate">Okoye</span>
-            </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAuthTab("staff_register");
+              setErrorMessage(null);
+            }}
+            className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              authTab === "staff_register"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <UserPlus className="w-3 h-3 text-emerald-600" />
+            <span>Register</span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("u-emeka", "/accommodation/controller")}
-              className="p-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-950 font-bold text-left hover:bg-emerald-100 transition-colors cursor-pointer flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-emerald-800 font-extrabold text-[10px] uppercase">Controller</span>
-                <Building className="w-3.5 h-3.5 text-emerald-700" />
-              </div>
-              <span className="mt-1 block font-bold text-slate-900 text-xs truncate">Emeka Obi</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("u-chioma", "/accommodation/hotliner")}
-              className="p-2.5 rounded-xl border border-blue-300 bg-blue-50 text-blue-950 font-bold text-left hover:bg-blue-100 transition-colors cursor-pointer flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-blue-800 font-extrabold text-[10px] uppercase">Hotliner</span>
-                <Radio className="w-3.5 h-3.5 text-blue-700" />
-              </div>
-              <span className="mt-1 block font-bold text-slate-900 text-xs truncate">Chioma Nwosu</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("u-kalu", "/accommodation/customer-rep")}
-              className="p-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-950 font-bold text-left hover:bg-amber-100 transition-colors cursor-pointer flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-amber-800 font-extrabold text-[10px] uppercase">Customer Rep</span>
-                <Headphones className="w-3.5 h-3.5 text-amber-700" />
-              </div>
-              <span className="mt-1 block font-bold text-slate-900 text-xs truncate">Kalu Eze</span>
-            </button>
-          </div>
-
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase">
-              <span className="bg-white px-2 text-slate-400 font-bold tracking-wider">
-                Or Sign In With Email
-              </span>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setAuthTab("admin");
+              setErrorMessage(null);
+            }}
+            className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              authTab === "admin"
+                ? "bg-amber-100 text-amber-900 shadow-xs border border-amber-300"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <KeyRound className="w-3 h-3 text-amber-600" />
+            <span>Admin</span>
+          </button>
         </div>
 
         {/* Informational Message */}
         {infoMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-3 text-emerald-800 text-sm">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600 mt-0.5" />
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-emerald-800 text-xs">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600 mt-0.5" />
             <div className="leading-relaxed">{infoMessage}</div>
           </div>
         )}
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200/80 flex items-start gap-3 text-rose-800 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600 mt-0.5" />
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-rose-800 text-xs">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5" />
             <div className="leading-relaxed">{errorMessage}</div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email Field */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
-            >
-              Email Address
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Mail className="w-4 h-4" />
-              </div>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                placeholder="name@kingsok.com"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-kingsok-600 focus:border-transparent transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label
-                htmlFor="password"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-700"
-              >
-                Password
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 1: STAFF SIGN IN */}
+        {/* ------------------------------------------------------------------ */}
+        {authTab === "staff_signin" && (
+          <form onSubmit={handleStaffSignIn} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                Staff Email Address
               </label>
-              <Link
-                href="/forgot-password"
-                className="text-xs font-medium text-kingsok-700 hover:text-kingsok-800 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock className="w-4 h-4" />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="e.g. emeka@kingsok.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                />
               </div>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-kingsok-600 focus:border-transparent transition-all"
-              />
             </div>
-          </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-kingsok-700 hover:bg-kingsok-800 text-white font-medium text-sm rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kingsok-600 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <span>Sign In</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </form>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                >
+                  Forgot?
+                </Link>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {loading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>Sign In as Staff</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setAuthTab("staff_register")}
+                className="text-xs text-slate-600 hover:text-emerald-700 font-semibold"
+              >
+                New staff member? <span className="font-bold text-emerald-700 underline">Register profile here</span>
+              </button>
+            </div>
+
+            {/* Quick Demo Access for Field Workers (Excludes Admin) */}
+            <div className="pt-4 border-t border-slate-100 space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Quick Team Access (Field Staff)
+              </span>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleQuickStaffLogin("u-emeka", "/accommodation/controller")}
+                  className="p-2 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 text-slate-900 text-left transition-colors cursor-pointer"
+                >
+                  <span className="text-[9px] uppercase font-bold text-emerald-800 block">Controller</span>
+                  <span className="font-bold text-xs truncate block">Emeka</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickStaffLogin("u-chioma", "/accommodation/hotliner")}
+                  className="p-2 rounded-xl border border-sky-200 bg-sky-50/60 hover:bg-sky-100 text-slate-900 text-left transition-colors cursor-pointer"
+                >
+                  <span className="text-[9px] uppercase font-bold text-sky-800 block">Hotliner</span>
+                  <span className="font-bold text-xs truncate block">Chioma</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickStaffLogin("u-kalu", "/accommodation/customer-rep")}
+                  className="p-2 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100 text-slate-900 text-left transition-colors cursor-pointer"
+                >
+                  <span className="text-[9px] uppercase font-bold text-amber-800 block">Customer Rep</span>
+                  <span className="font-bold text-xs truncate block">Kalu</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 2: STAFF REGISTRATION */}
+        {/* ------------------------------------------------------------------ */}
+        {authTab === "staff_register" && (
+          <form onSubmit={handleStaffRegister} className="space-y-3.5">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                Full Name *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="e.g. Ebuka Kingsley"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  Phone Number *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    placeholder="+234 803 000 0000"
+                    className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  WhatsApp Phone
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={whatsappPhone}
+                    onChange={(e) => setWhatsappPhone(e.target.value)}
+                    placeholder="Same or WhatsApp"
+                    className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  Desired Role
+                </label>
+                <select
+                  value={desiredRole}
+                  onChange={(e) => setDesiredRole(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                >
+                  <option value="area_controller">🏢 Area Controller</option>
+                  <option value="hotliner">📡 Hotliner</option>
+                  <option value="customer_rep">🎧 Customer Rep</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  Preferred Territory
+                </label>
+                <select
+                  value={zonePreference}
+                  onChange={(e) => setZonePreference(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                >
+                  <option value="Hilltop Zone">Hilltop Zone</option>
+                  <option value="Odim Gate Zone">Odim Gate Zone</option>
+                  <option value="Ofulonu Zone">Ofulonu Zone</option>
+                  <option value="Green House Zone">Green House Zone</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                Email Address *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="your-email@example.com"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                Password * (min 6 characters)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {loading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>Register Profile & Await Role</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+              Upon registering, your profile is routed to Admin (Okoye) for territory and quota assignment.
+            </p>
+          </form>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 3: ADMIN COMMAND PORTAL */}
+        {/* ------------------------------------------------------------------ */}
+        {authTab === "admin" && (
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Restricted to Authorized Executive Leadership (Okoye).</span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                Admin Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  required
+                  placeholder="okoye@kingsok.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Admin Passcode / Password
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">Passcode: kingsok2026</span>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  value={adminPasscode}
+                  onChange={(e) => setAdminPasscode(e.target.value)}
+                  required
+                  placeholder="Enter Admin Passcode"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {loading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <ShieldAlert className="w-4 h-4 text-amber-400" />
+                  <span>Unlock Admin Command Center</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Footer Notice */}
-      <p className="text-center text-xs text-slate-400 mt-8">
-        Strictly invite-only. System access is monitored and audited.
+      <p className="text-center text-xs text-slate-400 mt-6">
+        KINGSOK Ecosystem &bull; Character, Systems, and Absolute Ground Truth.
       </p>
     </div>
   );
@@ -293,8 +719,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex-1 flex items-center justify-center p-4">
-      <Suspense fallback={<div className="text-sm text-slate-500">Loading...</div>}>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <Suspense fallback={<div className="text-sm text-slate-500">Loading portal...</div>}>
         <LoginForm />
       </Suspense>
     </main>

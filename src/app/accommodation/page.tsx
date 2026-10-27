@@ -8,6 +8,7 @@ import {
   getUsers,
   getCurrentUser,
   switchCurrentUser,
+  logoutCurrentUser,
   CampaignGoal,
   UserProfile,
 } from "@/lib/accommodation-service";
@@ -21,6 +22,8 @@ import {
   ArrowRight,
   Award,
   BookOpen,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 
 export default function AccommodationPortalHome() {
@@ -138,185 +141,289 @@ export default function AccommodationPortalHome() {
         )}
 
         {/* ACTIVE WORKER IDENTITY & MY REWARDS WALLET */}
-        {currentUser && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black text-lg shadow-xs">
-                  {currentUser.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-slate-900 text-lg">
-                      {currentUser.name}
-                    </h3>
-                    <span className="text-xs bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded-md border border-slate-200">
-                      {currentUser.phone}
-                    </span>
+        {currentUser ? (
+          currentUser.status === "pending_approval" || currentUser.roles.includes("pending") ? (
+            /* PENDING ADMIN APPROVAL STATE */
+            <div className="bg-white rounded-3xl border border-amber-300 p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100 pb-5">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 font-black text-xl shadow-xs">
+                    {currentUser.name.charAt(0)}
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {currentUser.roles.map((r) => (
-                      <span
-                        key={r}
-                        className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 tracking-wider"
-                      >
-                        {r.replace("_", " ")}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-slate-900 text-xl">
+                        {currentUser.name}
+                      </h3>
+                      <span className="text-xs bg-amber-50 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider">
+                        Pending Admin Assignment
                       </span>
-                    ))}
+                    </div>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      Phone: {currentUser.phone} &bull; WhatsApp: {currentUser.whatsapp_phone || currentUser.phone}
+                    </p>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200 transition-colors"
+                  >
+                    Check Status / Refresh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logoutCurrentUser();
+                      window.location.reload();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors"
+                  >
+                    Log Out
+                  </button>
                 </div>
               </div>
 
-              {/* Gold Rewards Wallet Pill */}
-              <div className="flex items-center gap-4 bg-amber-50/80 px-4 py-2.5 rounded-xl border border-amber-300">
-                <div className="text-center sm:text-right">
-                  <div className="text-[10px] font-black text-amber-800 uppercase tracking-widest">
-                    My Rewards Wallet
-                  </div>
-                  <div className="text-sm font-black text-slate-900 flex items-center gap-1.5 justify-center sm:justify-end mt-0.5">
-                    <Award className="w-4 h-4 text-amber-600" />
-                    <span>{currentUser.total_points} Points</span>
-                    <span className="text-xs text-amber-700 font-mono font-bold">
-                      (₦{currentUser.cash_value_earned.toLocaleString()})
-                    </span>
-                  </div>
+              {/* Orientation Notice */}
+              <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                <div className="flex items-center gap-2 text-amber-800 text-sm font-extrabold">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>Welcome to the KINGSOK Ecosystem & Workforce</span>
                 </div>
-
-                {/* Persona Switcher (For Development & Demonstration) */}
-                <div className="border-l border-amber-200 pl-3">
-                  <label className="block text-[9px] font-bold uppercase text-slate-500 mb-1">
-                    Switch Persona
-                  </label>
-                  <select
-                    value={currentUser.id}
-                    onChange={(e) => handleUserSwitch(e.target.value)}
-                    className="text-xs font-semibold bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1 focus:ring-1 focus:ring-emerald-500 outline-none shadow-xs"
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  Your staff profile has been registered in the system. The Executive Office (Admin Okoye) has been notified to verify your account and assign your official operational role (<strong>{currentUser.desired_role ? currentUser.desired_role.replace("_", " ") : "Area Controller"}</strong>) and territory (<strong>{currentUser.zone_preference || "Hilltop Zone"}</strong>).
+                </p>
+                <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
+                  <a
+                    href={`https://wa.me/2348000000001?text=Hello%20Admin%20Okoye,%20I%20have%20registered%20as%20a%20staff%20member%20on%20KINGSOK%20Ecosystem.%20My%20name%20is%20${encodeURIComponent(currentUser.name)}%20(${encodeURIComponent(currentUser.phone)}).%20Please%20assign%20my%20role.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs transition-colors inline-flex items-center gap-1.5"
                   >
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.roles.join(", ")})
-                      </option>
-                    ))}
-                  </select>
+                    <span>Notify Admin (Okoye) on WhatsApp</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                  <span className="text-slate-500 text-[11px]">
+                    Once approved, your operational workspace will unlock here automatically.
+                  </span>
                 </div>
               </div>
             </div>
-
-            {/* DIRECT ROLE WORKSPACE LAUNCHERS */}
-            <div className="space-y-3">
-              <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">
-                Assigned Role Workspaces (Click to Launch)
-              </span>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                {/* Area Controller Workspace */}
-                {hasRole("area_controller") && (
-                  <Link
-                    href="/accommodation/controller"
-                    className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-500 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Building className="w-5 h-5 text-emerald-600" />
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          Active Role
+          ) : (
+            /* ACTIVE WORKER STATE */
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black text-lg shadow-xs">
+                    {currentUser.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-slate-900 text-lg">
+                        {currentUser.name}
+                      </h3>
+                      <span className="text-xs bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded-md border border-slate-200">
+                        {currentUser.phone}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {currentUser.roles.map((r) => (
+                        <span
+                          key={r}
+                          className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 tracking-wider"
+                        >
+                          {r.replace("_", " ")}
                         </span>
-                      </div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Area Controller
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Record lodges, caretakers, vacating final-year & transition students, and scout your assigned territory.
-                      </p>
+                      ))}
                     </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
-                      <span>Launch Workspace</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </Link>
-                )}
+                  </div>
+                </div>
 
-                {/* Hotliner Workspace */}
-                {hasRole("hotliner") && (
-                  <Link
-                    href="/accommodation/hotliner"
-                    className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-500 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Radio className="w-5 h-5 text-emerald-600" />
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                          Active Role
-                        </span>
-                      </div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Hotliner / Broadcast
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Engage incoming freshers, log WhatsApp group broadcasts, and schedule physical inspections.
-                      </p>
+                {/* Gold Rewards Wallet Pill */}
+                <div className="flex items-center gap-4 bg-amber-50/80 px-4 py-2.5 rounded-xl border border-amber-300">
+                  <div className="text-center sm:text-right">
+                    <div className="text-[10px] font-black text-amber-800 uppercase tracking-widest">
+                      My Rewards Wallet
                     </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
-                      <span>Launch Workspace</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                    <div className="text-sm font-black text-slate-900 flex items-center gap-1.5 justify-center sm:justify-end mt-0.5">
+                      <Award className="w-4 h-4 text-amber-600" />
+                      <span>{currentUser.total_points} Points</span>
+                      <span className="text-xs text-amber-700 font-mono font-bold">
+                        (₦{currentUser.cash_value_earned.toLocaleString()})
+                      </span>
                     </div>
-                  </Link>
-                )}
+                  </div>
 
-                {/* Customer Rep Workspace */}
-                {hasRole("customer_rep") && (
-                  <Link
-                    href="/accommodation/customer-rep"
-                    className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-400 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logoutCurrentUser();
+                      window.location.reload();
+                    }}
+                    className="text-xs font-bold text-slate-500 hover:text-rose-600 pl-3 border-l border-amber-200"
+                    title="Log Out"
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Headphones className="w-5 h-5 text-amber-600" />
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                          Cross-Sector
-                        </span>
-                      </div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Customer Rep Desk
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Register client details and collect direct client feedback across KINGSOK sectors.
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-bold text-amber-600 group-hover:translate-x-1 transition-transform">
-                      <span>Launch Desk</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </Link>
-                )}
-
-                {/* Admin Command Center */}
-                {hasRole("admin") && (
-                  <Link
-                    href="/accommodation/admin"
-                    className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-slate-800 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <ShieldAlert className="w-5 h-5 text-slate-800" />
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                          Administrator
-                        </span>
-                      </div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Admin Command Center
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        Assign multi-roles, review submissions, award merit points, and calibrate campaign targets.
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-bold text-slate-900 group-hover:translate-x-1 transition-transform">
-                      <span>Launch Command</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </Link>
-                )}
+                    Log Out
+                  </button>
+                </div>
               </div>
+
+              {/* DIRECT ROLE WORKSPACE LAUNCHERS */}
+              <div className="space-y-3">
+                <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">
+                  Your Assigned Role Workspaces (Click to Launch)
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  {/* Area Controller Workspace */}
+                  {hasRole("area_controller") && (
+                    <Link
+                      href="/accommodation/controller"
+                      className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-500 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Building className="w-5 h-5 text-emerald-600" />
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Active Role
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">
+                          Area Controller
+                        </h4>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Record lodges, caretakers, vacating final-year & transition students, and scout your assigned territory.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+                        <span>Launch Workspace</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </div>
+                    </Link>
+                  )}
+
+                  {/* Hotliner Workspace */}
+                  {hasRole("hotliner") && (
+                    <Link
+                      href="/accommodation/hotliner"
+                      className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-500 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Radio className="w-5 h-5 text-emerald-600" />
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            Active Role
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">
+                          Hotliner / Broadcast
+                        </h4>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Engage incoming freshers, log WhatsApp group broadcasts, and schedule physical inspections.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+                        <span>Launch Workspace</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </div>
+                    </Link>
+                  )}
+
+                  {/* Customer Rep Workspace */}
+                  {hasRole("customer_rep") && (
+                    <Link
+                      href="/accommodation/customer-rep"
+                      className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-400 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Headphones className="w-5 h-5 text-amber-600" />
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            Cross-Sector
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">
+                          Customer Rep Desk
+                        </h4>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Register client details and collect direct client feedback across KINGSOK sectors.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1 text-xs font-bold text-amber-600 group-hover:translate-x-1 transition-transform">
+                        <span>Launch Desk</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </div>
+                    </Link>
+                  )}
+
+                  {/* Admin Command Center */}
+                  {hasRole("admin") && (
+                    <Link
+                      href="/accommodation/admin"
+                      className="p-4 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-slate-800 transition-all shadow-xs hover:shadow-md group flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <ShieldAlert className="w-5 h-5 text-slate-800" />
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            Administrator
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">
+                          Admin Command Center
+                        </h4>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          Assign multi-roles, review submissions, award merit points, and calibrate campaign targets.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1 text-xs font-bold text-slate-900 group-hover:translate-x-1 transition-transform">
+                        <span>Launch Command</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          /* GUEST / UNAUTHENTICATED STATE */
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-xs text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 mx-auto shadow-xs">
+              <Building className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-xl">
+                Staff Identity & Workspace Access
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto mt-1 leading-relaxed">
+                Welcome to the KINGSOK Accommodation workforce system. Please sign in with your staff account or register your staff profile to access assigned field workspaces.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
+              <Link
+                href="/login?portal=staff"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Staff Sign In</span>
+              </Link>
+              <Link
+                href="/login?portal=staff&mode=register"
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 transition-colors flex items-center gap-2"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Register as New Staff</span>
+              </Link>
+              <Link
+                href="/login?portal=admin"
+                className="px-4 py-2.5 text-slate-500 hover:text-slate-800 text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+                <span>Admin Access</span>
+              </Link>
             </div>
           </div>
         )}

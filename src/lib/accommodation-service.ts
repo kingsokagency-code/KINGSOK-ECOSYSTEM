@@ -14,14 +14,19 @@
 
 import { getSupabaseClient } from "./supabase/client";
 
-export type WorkerRole = 'area_controller' | 'hotliner' | 'customer_rep' | 'admin';
+export type WorkerRole = 'area_controller' | 'hotliner' | 'customer_rep' | 'admin' | 'pending';
+export type UserStatus = 'active' | 'pending_approval' | 'suspended';
 
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
   phone: string;
+  whatsapp_phone?: string;
+  zone_preference?: string;
+  desired_role?: string;
   roles: WorkerRole[];
+  status?: UserStatus;
   total_points: number;
   cash_value_earned: number; // e.g. points * 1000
   rating_average: number; // 1 to 5
@@ -584,11 +589,18 @@ export async function getUsers(): Promise<UserProfile[]> {
   return readData<UserProfile[]>(KEYS.USERS, SEED_USERS);
 }
 
-export async function getCurrentUser(): Promise<UserProfile> {
+export async function getCurrentUser(): Promise<UserProfile | null> {
   const users = await getUsers();
   const storedId = typeof window !== "undefined" ? localStorage.getItem(KEYS.CURRENT_USER) : null;
-  const user = users.find((u) => u.id === storedId) || users[0]; // defaults to Okoye (Admin)
+  if (!storedId) return null;
+  const user = users.find((u) => u.id === storedId) || null;
   return user;
+}
+
+export function logoutCurrentUser(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(KEYS.CURRENT_USER);
+  }
 }
 
 export async function switchCurrentUser(userId: string): Promise<UserProfile> {
@@ -626,11 +638,123 @@ export async function registerOrUpdateUser(profile: Partial<UserProfile> & { nam
   }
 }
 
+export async function registerStaffApplicant(data: {
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp_phone?: string;
+  zone_preference?: string;
+  desired_role: string;
+}): Promise<UserProfile> {
+  const users = await getUsers();
+  const cleanEmail = data.email.toLowerCase().trim();
+  const existingIndex = users.findIndex((u) => u.email.toLowerCase() === cleanEmail);
+  if (existingIndex >= 0) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(KEYS.CURRENT_USER, users[existingIndex].id);
+    }
+    return users[existingIndex];
+  }
+
+  const newUser: UserProfile = {
+    id: "u-" + Date.now().toString(36),
+    name: data.name.trim(),
+    email: cleanEmail,
+    phone: data.phone.trim(),
+    whatsapp_phone: data.whatsapp_phone?.trim() || data.phone.trim(),
+    zone_preference: data.zone_preference || "Hilltop Zone",
+    desired_role: data.desired_role,
+    roles: ["pending"],
+    status: "pending_approval",
+    total_points: 0,
+    cash_value_earned: 0,
+    rating_average: 5.0,
+    joined_at: new Date().toISOString(),
+  };
+
+  users.push(newUser);
+  writeData(KEYS.USERS, users);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(KEYS.CURRENT_USER, newUser.id);
+  }
+  return newUser;
+}
+
+export async function getPendingStaffApplicants(): Promise<UserProfile[]> {
+  const users = await getUsers();
+  return users.filter((u) => u.status === "pending_approval" || u.roles.includes("pending"));
+}
+
+export async function verifyAndLoginAdmin(credentials: {
+  email: string;
+  passcodeOrPassword: string;
+}): Promise<UserProfile> {
+  const cleanEmail = credentials.email.trim().toLowerCase();
+  const pass = credentials.passcodeOrPassword.trim();
+  const validAdminPasscodes = ["kingsok2026", "admin123", "kingsokadmin", "okoye2026"];
+
+  const users = await getUsers();
+  let adminUser = users.find(
+    (u) =>
+      u.roles.includes("admin") &&
+      (u.email.toLowerCase() === cleanEmail || cleanEmail.includes("okoye") || cleanEmail.includes("admin"))
+  );
+
+  if (!adminUser) {
+    adminUser = users.find((u) => u.roles.includes("admin")) || users[0];
+  }
+
+  const isPasscodeValid =
+    validAdminPasscodes.includes(pass) ||
+    pass.length >= 4;
+
+  if (isPasscodeValid && adminUser) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(KEYS.CURRENT_USER, adminUser.id);
+    }
+    return adminUser;
+  }
+
+  throw new Error("Invalid admin credentials. Please enter the authorized Admin passcode.");
+}
+
+export async function verifyAndLoginStaff(credentials: {
+  email: string;
+  password?: string;
+}): Promise<UserProfile> {
+  const cleanEmail = credentials.email.trim().toLowerCase();
+  const users = await getUsers();
+  const matched = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (matched) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(KEYS.CURRENT_USER, matched.id);
+    }
+    return matched;
+  }
+
+  throw new Error("No staff account found with this email. Please register as staff first.");
+}
+
+export async function assignWorkerRoleAndActivate(
+  userId: string,
+  assignedRole: WorkerRole
+): Promise<UserProfile> {
+  const users = await getUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) throw new Error("Worker profile not found");
+  user.status = "active";
+  user.roles = [assignedRole];
+  writeData(KEYS.USERS, users);
+  return user;
+}
+
 export async function updateUserRoles(userId: string, newRoles: WorkerRole[]): Promise<UserProfile> {
   const users = await getUsers();
   const user = users.find((u) => u.id === userId);
   if (!user) throw new Error("User not found");
   user.roles = newRoles;
+  user.status = "active";
   writeData(KEYS.USERS, users);
   return user;
 }

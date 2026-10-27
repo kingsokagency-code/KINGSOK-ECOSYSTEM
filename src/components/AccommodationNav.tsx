@@ -16,11 +16,13 @@ import {
   ChevronDown,
   Check,
   Crown,
+  LogOut,
 } from "lucide-react";
 import {
   getCurrentUser,
   getUsers,
   switchCurrentUser,
+  logoutCurrentUser,
   UserProfile,
 } from "@/lib/accommodation-service";
 
@@ -61,15 +63,15 @@ export default function AccommodationNav() {
     }
   };
 
+  const isAdmin = currentUser?.roles.includes("admin");
+
   const navItems = [
     { label: "Overview & Goals", href: "/accommodation", icon: Home },
     { label: "Area Controller", href: "/accommodation/controller", icon: Building },
     { label: "Hotliner", href: "/accommodation/hotliner", icon: Radio },
     { label: "Customer Rep", href: "/accommodation/customer-rep", icon: Headphones },
-    { label: "Admin Center", href: "/accommodation/admin", icon: ShieldAlert },
+    ...(isAdmin ? [{ label: "Admin Center", href: "/accommodation/admin", icon: ShieldAlert }] : []),
   ];
-
-  const isAdmin = currentUser?.roles.includes("admin");
 
   return (
     <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
@@ -125,8 +127,8 @@ export default function AccommodationNav() {
 
           {/* Right Action: Active User Persona Switcher & Log Lodge */}
           <div className="flex items-center gap-2">
-            {/* Active User Persona Dropdown */}
-            {currentUser && (
+            {/* Active User Persona Dropdown or Login Button */}
+            {currentUser ? (
               <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
@@ -215,25 +217,38 @@ export default function AccommodationNav() {
                     </div>
 
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-2 px-1 text-[11px] font-bold">
-                      <Link
-                        href="/accommodation/admin"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logoutCurrentUser();
+                          setIsDropdownOpen(false);
+                          window.location.reload();
+                        }}
+                        className="text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
                       >
-                        <ShieldAlert className="w-3 h-3 text-emerald-600" />
-                        <span>Assign Roles in Admin</span>
-                      </Link>
+                        <LogOut className="w-3 h-3 text-rose-600" />
+                        <span>Log Out</span>
+                      </button>
+
                       <Link
                         href="/login"
                         onClick={() => setIsDropdownOpen(false)}
                         className="text-slate-500 hover:text-slate-800"
                       >
-                        Sign In / Invite
+                        Switch Account / Login
                       </Link>
                     </div>
                   </div>
                 )}
               </div>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-slate-200/80 rounded-xl transition-colors border border-slate-200"
+              >
+                <User className="w-3.5 h-3.5 text-slate-500" />
+                <span>Staff Login</span>
+              </Link>
             )}
 
             <Link

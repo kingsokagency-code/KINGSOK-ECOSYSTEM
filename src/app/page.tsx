@@ -221,18 +221,18 @@ export default function PublicEcosystemHome() {
 
           <div className="flex items-center gap-2.5">
             <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-slate-900 font-semibold text-xs rounded-xl hover:bg-slate-100 border border-slate-200 transition-all"
+              href="/login?portal=staff"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-slate-900 font-bold text-xs rounded-xl hover:bg-slate-100 border border-slate-200 transition-all"
             >
-              <User className="w-3.5 h-3.5 text-slate-500" />
-              <span>Staff Login</span>
+              <User className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Staff Portal</span>
             </Link>
             <Link
-              href="/accommodation"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-emerald-600/20 transition-all"
+              href="/login?portal=admin"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
             >
-              <span>Enter Portal</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <span>Admin Portal</span>
             </Link>
           </div>
         </div>
@@ -263,19 +263,21 @@ export default function PublicEcosystemHome() {
           </p>
 
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="#sectors"
+            <Link
+              href="/login?portal=staff"
               className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2"
             >
-              <span>Explore Operational Sectors</span>
+              <User className="w-4 h-4" />
+              <span>Sign In as Staff</span>
               <ArrowRight className="w-4 h-4" />
-            </a>
-            <a
-              href="#principles"
-              className="px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold border border-slate-300 shadow-xs transition-all"
+            </Link>
+            <Link
+              href="/login?portal=admin"
+              className="px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-sm font-bold border border-slate-300 shadow-xs transition-all flex items-center gap-2"
             >
-              Our Foundation Charter
-            </a>
+              <Shield className="w-4 h-4 text-amber-500" />
+              <span>Admin Portal</span>
+            </Link>
           </div>
 
           {/* Key Quality Pillars Bar */}

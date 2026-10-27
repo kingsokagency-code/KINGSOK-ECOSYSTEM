@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import AccommodationNav from "@/components/AccommodationNav";
 import {
   getClientLeads,
@@ -254,8 +255,70 @@ export default function HotlinerWorkspace() {
     0
   );
 
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans">
+        <AccommodationNav />
+        <main className="max-w-md w-full mx-auto px-4 py-16 flex-1 flex flex-col justify-center">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 mx-auto shadow-xs">
+              <Radio className="w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">
+                Hotliner Authentication Required
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Please sign in with your staff account to access the Hotliner lead & broadcast hub.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link
+                href="/login?portal=staff"
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors inline-block"
+              >
+                Sign In as Staff
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (currentUser.status === "pending_approval" || currentUser.roles.includes("pending")) {
+    return (
+      <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans">
+        <AccommodationNav />
+        <main className="max-w-md w-full mx-auto px-4 py-16 flex-1 flex flex-col justify-center">
+          <div className="bg-white rounded-3xl border border-amber-300 p-6 sm:p-8 shadow-sm text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 mx-auto shadow-xs">
+              <Radio className="w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">
+                Account Pending Admin Assignment
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Hello {currentUser.name}, your account is currently pending Admin (Okoye) approval and role assignment.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col gap-2">
+              <Link
+                href="/accommodation"
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors inline-block"
+              >
+                View Status on Dashboard
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans">
       <AccommodationNav />
 
       <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">

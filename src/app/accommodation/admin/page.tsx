@@ -23,6 +23,8 @@ import {
   assignAdminDuty,
   deleteDailyTask,
   resetAllDataToCleanSlate,
+  assignWorkerRoleAndActivate,
+  verifyAndLoginAdmin,
   CampaignGoal,
   Strategy,
   UserProfile,
@@ -143,6 +145,23 @@ export default function AdminCommandCenter() {
   const [targetReach, setTargetReach] = useState(5000);
   const [currentReach, setCurrentReach] = useState(0);
   const [deadlineText, setDeadlineText] = useState("");
+
+  // Admin Passcode Barrier State
+  const [passcodeInput, setPasscodeInput] = useState("");
+  const [passcodeError, setPasscodeError] = useState<string | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
+
+  // Staff Role Assignment Handler
+  const handleAssignStaffRole = async (userId: string, role: WorkerRole, roleTitle: string) => {
+    try {
+      await assignWorkerRoleAndActivate(userId, role);
+      const updatedUsers = await getUsers();
+      setUsers(updatedUsers);
+      setNotification(`Staff approved and assigned as ${roleTitle}!`);
+    } catch (err: any) {
+      alert("Error assigning role: " + err.message);
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -760,8 +779,94 @@ export default function AdminCommandCenter() {
     setNotification("Clean slate initialized: all metrics and records zeroed out to ground truth!");
   };
 
+  const pendingStaff = users.filter(
+    (u) => u.status === "pending_approval" || u.roles.includes("pending")
+  );
+
+  // Authentication barrier: If visitor is not logged in as Admin, require Admin Passcode
+  if (!currentUser || !currentUser.roles.includes("admin")) {
+    return (
+      <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans">
+        <AccommodationNav />
+        <main className="max-w-md w-full mx-auto px-4 py-16 flex-1 flex flex-col justify-center">
+          <div className="bg-white rounded-3xl border border-amber-300 p-6 sm:p-8 shadow-sm space-y-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 mx-auto shadow-xs">
+              <ShieldAlert className="w-7 h-7 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">
+                Admin Command Access
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Restricted Executive Portal &bull; Passcode Verification
+              </p>
+            </div>
+
+            {passcodeError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {passcodeError}
+              </div>
+            )}
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPasscodeError(null);
+                setUnlocking(true);
+                try {
+                  const admin = await verifyAndLoginAdmin({
+                    email: "okoye@kingsok.com",
+                    passcodeOrPassword: passcodeInput,
+                  });
+                  setCurrentUser(admin);
+                  setNotification("Admin authority verified. Welcome, Okoye!");
+                } catch (err: any) {
+                  setPasscodeError(err.message || "Invalid passcode.");
+                } finally {
+                  setUnlocking(false);
+                }
+              }}
+              className="space-y-4 text-left"
+            >
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
+                  Executive Passcode
+                </label>
+                <input
+                  type="password"
+                  value={passcodeInput}
+                  onChange={(e) => setPasscodeInput(e.target.value)}
+                  placeholder="Enter passcode (kingsok2026)"
+                  required
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={unlocking}
+                className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {unlocking ? "Verifying..." : "Unlock Command Center"}
+              </button>
+            </form>
+
+            <div className="pt-2 border-t border-slate-100">
+              <a
+                href="/login?portal=staff"
+                className="text-xs text-slate-500 hover:text-emerald-700 font-semibold"
+              >
+                Not an administrator? Go to Staff Portal &rarr;
+              </a>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans">
       <AccommodationNav />
 
       <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
@@ -781,20 +886,121 @@ export default function AdminCommandCenter() {
           </div>
         )}
 
+        {/* PENDING STAFF RECRUITS & ROLE ASSIGNMENT DESK */}
+        {pendingStaff.length > 0 && (
+          <div className="bg-gradient-to-r from-amber-50/90 via-white to-amber-50/60 border-2 border-amber-300 rounded-3xl p-6 shadow-sm space-y-4 animate-in fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-slate-900">
+                      Pending Staff Registrations ({pendingStaff.length})
+                    </h3>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 tracking-wider">
+                      Action Required
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    New personnel registered on phone awaiting role assignment. Click a role below to activate their operational dashboard instantly.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {pendingStaff.map((applicant) => (
+                <div
+                  key={applicant.id}
+                  className="bg-white border border-amber-200 rounded-2xl p-4 space-y-3 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-sm">
+                        {applicant.name}
+                      </h4>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">
+                        {applicant.phone} &bull; {applicant.email}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                          Prefers: {applicant.desired_role ? applicant.desired_role.replace("_", " ") : "Area Controller"}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Zone: {applicant.zone_preference || "Hilltop"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <a
+                      href={`https://wa.me/${applicant.whatsapp_phone?.replace(/\D/g, "") || applicant.phone.replace(/\D/g, "")}?text=Hello%20${encodeURIComponent(applicant.name)},%20this%20is%20Okoye%20from%20KINGSOK.%20I%20saw%20your%20staff%20registration.`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold shrink-0 flex items-center gap-1"
+                      title="Direct Chat on WhatsApp"
+                    >
+                      <MessageSquare className="w-3 h-3 text-emerald-600" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">
+                      Assign Role & Activate Workspace:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => handleAssignStaffRole(applicant.id, "area_controller", "Area Controller")}
+                        className="py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-colors cursor-pointer text-center"
+                      >
+                        🏢 Controller
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAssignStaffRole(applicant.id, "hotliner", "Hotliner")}
+                        className="py-1.5 px-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold transition-colors cursor-pointer text-center"
+                      >
+                        📡 Hotliner
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAssignStaffRole(applicant.id, "customer_rep", "Customer Rep")}
+                        className="py-1.5 px-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors cursor-pointer text-center"
+                      >
+                        🎧 Customer Rep
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAssignStaffRole(applicant.id, "admin", "Administrator")}
+                        className="py-1.5 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-colors cursor-pointer text-center"
+                      >
+                        👑 Admin
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ADMIN HEADER */}
-        <div className="bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-400/30 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-700/60 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-xs font-black uppercase tracking-widest text-amber-400">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-amber-400/40 text-xs font-black uppercase tracking-widest text-amber-300">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
                 Administrative Command Center
               </div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                 Workforce Operations & Reward Engine
               </h1>
-              <p className="text-xs sm:text-sm text-neutral-300 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                 Review live field submissions across lodges, student intel, and cross-sector clients. Award merit performance points (1 Pt = ₦1,000 cash value), assign multi-role designations, and dispatch daily ground missions.
               </p>
             </div>
@@ -802,26 +1008,26 @@ export default function AdminCommandCenter() {
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <button
                 onClick={handleResetToCleanSlate}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-700/50 text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-700/50 text-xs font-bold transition-colors shadow-xs cursor-pointer"
                 title="Purge all demo and cached records, resetting metrics to 0"
               >
-                <RotateCcw className="w-4 h-4 text-red-400" />
+                <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
                 <span>Zero All (0)</span>
               </button>
 
               <button
                 onClick={() => setExportModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs font-bold transition-colors shadow-xs cursor-pointer"
               >
-                <Download className="w-4 h-4 text-amber-400" />
+                <Download className="w-3.5 h-3.5 text-amber-400" />
                 <span>Export (Excel / CSV)</span>
               </button>
 
               <button
                 onClick={() => setAddWorkerModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold border border-neutral-700 transition-colors shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 transition-colors shadow-xs cursor-pointer"
               >
-                <UserPlus className="w-4 h-4 text-emerald-400" />
+                <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Add Worker</span>
               </button>
 
@@ -829,9 +1035,9 @@ export default function AdminCommandCenter() {
                 onClick={() => {
                   setActiveTab("dispatch");
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition-colors cursor-pointer border border-emerald-400"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer border border-emerald-500"
               >
-                <CheckSquare className="w-4 h-4" />
+                <CheckSquare className="w-3.5 h-3.5" />
                 <span>Dispatch Mission</span>
               </button>
             </div>
@@ -840,81 +1046,83 @@ export default function AdminCommandCenter() {
 
         {/* GROUND TRUTH METRIC COUNTERS */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-amber-600 block tracking-wider">
               Points Awarded
             </span>
-            <div className="text-xl sm:text-2xl font-black text-amber-300 mt-1">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {totalPointsIssued} Pts
             </div>
-            <span className="text-[11px] text-neutral-400">Total merit points</span>
+            <span className="text-[11px] text-slate-400">Total merit points</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <span className="text-[10px] uppercase font-bold text-emerald-400 block tracking-wider">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-emerald-600 block tracking-wider">
               Cash Value
             </span>
-            <div className="text-xl sm:text-2xl font-black text-emerald-300 mt-1">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               ₦{totalCashEarned.toLocaleString()}
             </div>
-            <span className="text-[11px] text-neutral-400">@ ₦1,000 per Pt</span>
+            <span className="text-[11px] text-slate-400">@ ₦1,000 per Pt</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <span className="text-[10px] uppercase font-bold text-sky-400 block tracking-wider">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-sky-600 block tracking-wider">
               Verified Lodges
             </span>
-            <div className="text-xl sm:text-2xl font-black text-sky-300 mt-1">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {lodges.length}
             </div>
-            <span className="text-[11px] text-neutral-400">Scouted by Controllers</span>
+            <span className="text-[11px] text-slate-400">Scouted by Controllers</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <span className="text-[10px] uppercase font-bold text-purple-400 block tracking-wider">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-purple-600 block tracking-wider">
               Student Intel
             </span>
-            <div className="text-xl sm:text-2xl font-black text-purple-300 mt-1">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {studentIntel.length}
             </div>
-            <span className="text-[11px] text-neutral-400">Final-Year & Transition</span>
+            <span className="text-[11px] text-slate-400">Final-Year & Transition</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <span className="text-[10px] uppercase font-bold text-emerald-400 block tracking-wider">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-emerald-600 block tracking-wider">
               Registered Clients
             </span>
-            <div className="text-xl sm:text-2xl font-black text-emerald-300 mt-1">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {registeredClients.length}
             </div>
-            <span className="text-[11px] text-neutral-400">Cross-sector profiles</span>
+            <span className="text-[11px] text-slate-400">Cross-sector profiles</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <span className="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">
               Active Staff
             </span>
-            <div className="text-xl sm:text-2xl font-black text-white mt-1">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {users.length}
             </div>
-            <span className="text-[11px] text-neutral-400">On active roster</span>
+            <span className="text-[11px] text-slate-400">On active roster</span>
           </div>
         </div>
 
         {/* TAB NAVIGATION BAR */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-2.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-full md:w-auto">
             <button
               onClick={() => setActiveTab("stream")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                 activeTab === "stream"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
               <span>Live Submissions</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-950 text-neutral-300 font-mono">
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                activeTab === "stream" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
                 {submissions.length}
               </span>
             </button>
@@ -923,13 +1131,15 @@ export default function AdminCommandCenter() {
               onClick={() => setActiveTab("dispatch")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                 activeTab === "dispatch"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <CheckSquare className="w-3.5 h-3.5" />
               <span>Daily Task Dispatcher</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-950 text-neutral-300 font-mono">
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                activeTab === "dispatch" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
                 {tasks.length}
               </span>
             </button>
@@ -938,13 +1148,15 @@ export default function AdminCommandCenter() {
               onClick={() => setActiveTab("workers")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                 activeTab === "workers"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <Users className="w-3.5 h-3.5" />
               <span>Staff Roster</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-950 text-neutral-300 font-mono">
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                activeTab === "workers" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
                 {users.length}
               </span>
             </button>
@@ -953,8 +1165,8 @@ export default function AdminCommandCenter() {
               onClick={() => setActiveTab("goals")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                 activeTab === "goals"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <Edit3 className="w-3.5 h-3.5" />
@@ -965,17 +1177,17 @@ export default function AdminCommandCenter() {
               onClick={() => setActiveTab("leaderboard")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                 activeTab === "leaderboard"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
-              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <Award className="w-3.5 h-3.5 text-amber-500" />
               <span>Merit Leaderboard</span>
             </button>
           </div>
 
-          <div className="text-[11px] font-mono text-neutral-400 text-right pr-2">
-            Admin: <strong className="text-white">{currentUser?.name || "Okoye"}</strong>
+          <div className="text-[11px] font-mono text-slate-500 text-right pr-2">
+            Admin: <strong className="text-slate-900">{currentUser?.name || "Okoye"}</strong>
           </div>
         </div>
 
@@ -1388,47 +1600,100 @@ export default function AdminCommandCenter() {
         {/* ============================================================== */}
         {activeTab === "workers" && (
           <div className="space-y-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
               <div>
-                <h3 className="text-base font-extrabold text-white">
-                  Active Staff Roster ({users.length})
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Staff Roster ({users.length})
                 </h3>
-                <p className="text-xs text-neutral-400">
-                  Toggle roles dynamically or register new staff members into the ecosystem.
+                <p className="text-xs text-slate-500">
+                  Assign operational designations, approve registered applicants, and dispatch field roles.
                 </p>
               </div>
 
               <button
                 onClick={() => setAddWorkerModalOpen(true)}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Add New Worker</span>
               </button>
             </div>
 
+            {/* Pending Applicants in Workers Tab */}
+            {pendingStaff.length > 0 && (
+              <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 space-y-3 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-amber-700" />
+                  <h4 className="font-extrabold text-slate-900 text-sm">
+                    Pending Staff Recruits ({pendingStaff.length})
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {pendingStaff.map((applicant) => (
+                    <div
+                      key={applicant.id}
+                      className="bg-white border border-amber-200 rounded-xl p-3.5 space-y-2.5 shadow-xs"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-bold text-slate-900 text-xs">{applicant.name}</p>
+                          <p className="text-[11px] font-mono text-slate-500">{applicant.phone} &bull; {applicant.email}</p>
+                          <span className="text-[10px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold mt-1 inline-block">
+                            Prefers: {applicant.desired_role ? applicant.desired_role.replace("_", " ") : "Area Controller"} ({applicant.zone_preference || "Hilltop"})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => handleAssignStaffRole(applicant.id, "area_controller", "Area Controller")}
+                          className="py-1 px-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer text-center"
+                        >
+                          Controller
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAssignStaffRole(applicant.id, "hotliner", "Hotliner")}
+                          className="py-1 px-2 rounded bg-sky-600 hover:bg-sky-700 text-white transition-colors cursor-pointer text-center"
+                        >
+                          Hotliner
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAssignStaffRole(applicant.id, "customer_rep", "Customer Rep")}
+                          className="py-1 px-2 rounded bg-amber-500 hover:bg-amber-600 text-white transition-colors cursor-pointer text-center"
+                        >
+                          Customer Rep
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {users.map((worker) => (
                 <div
                   key={worker.id}
-                  className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-4 shadow-md"
+                  className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-base font-extrabold text-white">
+                      <h4 className="text-base font-extrabold text-slate-900">
                         {worker.name}
                       </h4>
-                      <p className="text-xs text-neutral-400 font-mono">
+                      <p className="text-xs text-slate-500 font-mono">
                         {worker.email} {worker.phone && `• ${worker.phone}`}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-base font-black text-amber-300 flex items-center gap-1 justify-end">
-                        <Award className="w-4 h-4 text-amber-400" />
+                      <div className="text-base font-black text-amber-600 flex items-center gap-1 justify-end">
+                        <Award className="w-4 h-4 text-amber-600" />
                         <span>{worker.total_points || 0} Pts</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-emerald-400 block">
+                      <span className="text-xs font-mono font-bold text-emerald-700 block">
                         ₦{((worker.total_points || 0) * 1000).toLocaleString()} Value
                       </span>
                     </div>
@@ -1436,7 +1701,7 @@ export default function AdminCommandCenter() {
 
                   {/* Multi-Role Toggles */}
                   <div className="space-y-2">
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">
                       Assigned Operational Roles:
                     </span>
                     <div className="grid grid-cols-2 gap-2">
@@ -1444,8 +1709,8 @@ export default function AdminCommandCenter() {
                         onClick={() => handleToggleWorkerRole(worker.id, "area_controller")}
                         className={`p-2.5 rounded-xl text-xs font-bold border flex items-center justify-between transition-colors cursor-pointer ${
                           worker.roles.includes("area_controller")
-                            ? "bg-emerald-950 text-emerald-300 border-emerald-700"
-                            : "bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-neutral-300"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-800"
                         }`}
                       >
                         <span className="flex items-center gap-1.5">
@@ -1453,7 +1718,7 @@ export default function AdminCommandCenter() {
                           <span>Area Controller</span>
                         </span>
                         {worker.roles.includes("area_controller") && (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
                         )}
                       </button>
 
@@ -1461,8 +1726,8 @@ export default function AdminCommandCenter() {
                         onClick={() => handleToggleWorkerRole(worker.id, "hotliner")}
                         className={`p-2.5 rounded-xl text-xs font-bold border flex items-center justify-between transition-colors cursor-pointer ${
                           worker.roles.includes("hotliner")
-                            ? "bg-sky-950 text-sky-300 border-sky-700"
-                            : "bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-neutral-300"
+                            ? "bg-sky-50 text-sky-800 border-sky-300"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-800"
                         }`}
                       >
                         <span className="flex items-center gap-1.5">
@@ -1470,7 +1735,7 @@ export default function AdminCommandCenter() {
                           <span>Hotliner / Blast</span>
                         </span>
                         {worker.roles.includes("hotliner") && (
-                          <Check className="w-3.5 h-3.5 text-sky-400" />
+                          <Check className="w-3.5 h-3.5 text-sky-600" />
                         )}
                       </button>
 
@@ -1478,8 +1743,8 @@ export default function AdminCommandCenter() {
                         onClick={() => handleToggleWorkerRole(worker.id, "customer_rep")}
                         className={`p-2.5 rounded-xl text-xs font-bold border flex items-center justify-between transition-colors cursor-pointer ${
                           worker.roles.includes("customer_rep")
-                            ? "bg-amber-950 text-amber-300 border-amber-700"
-                            : "bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-neutral-300"
+                            ? "bg-amber-50 text-amber-800 border-amber-300"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-800"
                         }`}
                       >
                         <span className="flex items-center gap-1.5">
@@ -1487,7 +1752,7 @@ export default function AdminCommandCenter() {
                           <span>Customer Rep</span>
                         </span>
                         {worker.roles.includes("customer_rep") && (
-                          <Check className="w-3.5 h-3.5 text-amber-400" />
+                          <Check className="w-3.5 h-3.5 text-amber-600" />
                         )}
                       </button>
 
@@ -1495,8 +1760,8 @@ export default function AdminCommandCenter() {
                         onClick={() => handleToggleWorkerRole(worker.id, "admin")}
                         className={`p-2.5 rounded-xl text-xs font-bold border flex items-center justify-between transition-colors cursor-pointer ${
                           worker.roles.includes("admin")
-                            ? "bg-purple-950 text-purple-300 border-purple-700"
-                            : "bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-neutral-300"
+                            ? "bg-purple-50 text-purple-800 border-purple-300"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-800"
                         }`}
                       >
                         <span className="flex items-center gap-1.5">
@@ -1504,7 +1769,7 @@ export default function AdminCommandCenter() {
                           <span>Admin Center</span>
                         </span>
                         {worker.roles.includes("admin") && (
-                          <Check className="w-3.5 h-3.5 text-purple-400" />
+                          <Check className="w-3.5 h-3.5 text-purple-600" />
                         )}
                       </button>
                     </div>
