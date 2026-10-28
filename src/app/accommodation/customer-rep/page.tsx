@@ -193,8 +193,8 @@ export default function CustomerRepWorkspace() {
           assigned_staff_name: clientAssignedStaff.trim() || undefined,
           emergency_or_parent_contact: clientEmergencyContact.trim() || undefined,
           notes: clientNotes.trim() || undefined,
-          registered_by_id: currentUser?.id || "u-kalu",
-          registered_by_name: currentUser?.name || "Kalu Eze",
+          registered_by_id: currentUser?.id || "staff-rep",
+          registered_by_name: currentUser?.name || "Customer Rep",
         });
 
         setClients([newClient, ...clients]);
@@ -453,8 +453,8 @@ export default function CustomerRepWorkspace() {
           <div className="mt-6 pt-4 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="text-neutral-400 font-medium">Logged in Customer Rep:</span>
-              <strong className="text-white font-bold">{currentUser?.name || "Kalu Eze"}</strong>
-              <span className="text-neutral-400 font-mono">({currentUser?.phone || "+234 705 333 4455"})</span>
+              <strong className="text-white font-bold">{currentUser?.name || "Customer Rep"}</strong>
+              {currentUser?.phone && <span className="text-neutral-400 font-mono">({currentUser.phone})</span>}
             </div>
 
             <div className="flex items-center gap-2 bg-neutral-950 px-3 py-1 rounded-xl border border-neutral-800">

@@ -97,7 +97,7 @@ export interface LodgeAsset {
   is_vacant_now: boolean;
   vacancy_count: number;
   expected_vacancy_date?: string;
-  has_final_year_students: boolean;
+  has_final_year_students?: boolean;
   final_year_details?: string; // e.g. "3 students graduating in July with fridges and beds to sell"
   room_types: string; // e.g. "Self-contained, Single room"
   rent_per_session: string; // e.g. "₦250,000 - ₦320,000"
@@ -679,7 +679,10 @@ export async function getUsers(): Promise<UserProfile[]> {
           } catch {}
 
           const roleFromDb = (row.service_or_lodge_acquired || meta.role || "area_controller") as WorkerRole;
-          const isApproved = row.payment_status === "approved" || meta.status === "active";
+          const isApproved =
+            row.payment_status === "paid_in_full" ||
+            row.payment_status === "approved" ||
+            meta.status === "active";
 
           if (existing) {
             if (isApproved && (existing.status === "pending_approval" || existing.roles.includes("pending"))) {
@@ -945,11 +948,11 @@ export async function assignWorkerRoleAndActivate(
       await supabase
         .from("registered_clients")
         .update({
-          payment_status: "approved",
+          payment_status: "paid_in_full",
           service_or_lodge_acquired: assignedRole,
           notes: JSON.stringify({ role: assignedRole, status: "active" }),
         })
-        .eq("id", userId);
+        .or(`id.eq.${userId},email.eq.${user.email}`);
     } catch (err) {
       console.warn("Supabase staff role sync error:", err);
     }

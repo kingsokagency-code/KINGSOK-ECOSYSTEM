@@ -149,7 +149,7 @@ export default function HotlinerWorkspace() {
           desired_room_type: desiredRoomType.trim(),
           status: leadStatus,
           notes: notes.trim() || undefined,
-          hotliner_id: currentUser?.id || "u-chioma",
+          hotliner_id: currentUser?.id || "staff-hotliner",
           hotliner_name: currentUser?.name || "Hotliner",
         });
 

@@ -7,28 +7,31 @@ import { ContactRecord, MessageTemplate } from './types';
 
 export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
-    id: 'tmpl-nsukka-groups-combo',
-    title: 'KINGSOK Nsukka: Accommodation & Property WhatsApp Groups (Featured)',
+    id: 'tmpl-accommodation-flyer-caption',
+    title: 'KINGSOK UNN: Flyer Caption (Short & High-Converting — Featured)',
     category: 'accommodation',
-    description: 'Invites contacts to 1 UNN Student Accommodation group + 3 Nsukka Property & Land groups with STOP opt-out protection.',
-    content: `Hello {{first_name}}, greetings from KINGSOK ECOSYSTEM Nsukka!
+    description: 'Ultra-concise flyer caption designed for DM attention spans. Pairs directly with the KINGSOK Accommodations flyer and Accommodation Group 1 link.',
+    content: `Hello {{first_name}}! 🏠 Looking for a verified, affordable lodge or room around UNN without agent stress?
 
-We have created verified WhatsApp community groups to help students and residents in Nsukka connect directly with genuine lodges, houses, and verified property investments—completely free of agent extortion and fraud.
+See current sample vacancy on the flyer above! Tap below to join our student updates group for more available rooms & prices:
+👉 https://chat.whatsapp.com/IKLBnswV30yEj0doAGSu1Z
 
-🏠 UNN Student Lodges & Accommodation Hub:
-🔗 https://chat.whatsapp.com/PASTE_ACCOMMODATION_GROUP_LINK_HERE
-(Daily updates on verified vacancies in Hilltop, Ofulonu, Odim, Behind Flat & Green House)
+(Kindly help repost to your WhatsApp Status or class group to help a friend! 🙏❤️)`,
+    createdAt: '2026-10-28T00:00:00.000Z',
+    isSystem: true,
+  },
+  {
+    id: 'tmpl-accommodation-2liner',
+    title: 'KINGSOK UNN: 2-Liner Quick Direct Message',
+    category: 'accommodation',
+    description: 'Fastest 2-line DM message for maximum response rate.',
+    content: `Hi {{first_name}}! 🏠 Need a comfortable, verified lodge around UNN (Odenigwe, Hilltop, Ofulonu, Behind Flat)?
 
-🏢 Nsukka Property, Commercial & Land Investment Groups:
-🔗 Property Group 1: https://chat.whatsapp.com/PASTE_PROPERTY_GROUP_1_HERE
-🔗 Property Group 2: https://chat.whatsapp.com/PASTE_PROPERTY_GROUP_2_HERE
-🔗 Property Group 3: https://chat.whatsapp.com/PASTE_PROPERTY_GROUP_3_HERE
+Tap to join our student accommodation group for daily room updates & prices:
+👉 https://chat.whatsapp.com/IKLBnswV30yEj0doAGSu1Z
 
-👉 Simply tap any of the links above to join the groups that interest you!
-
-⚠️ Anti-Spam Notice:
-If you are NOT interested or do not want to receive updates from KINGSOK, kindly reply with the word "STOP". We will immediately remove your number from our contact list so you won't be messaged again. Please do not report as spam. Thank you!`,
-    createdAt: '2026-10-27T00:00:00.000Z',
+(Please help share to your status/class group! ❤️)`,
+    createdAt: '2026-10-28T00:00:00.000Z',
     isSystem: true,
   },
   {

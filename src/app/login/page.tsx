@@ -226,16 +226,6 @@ function LoginForm() {
     }
   };
 
-  // Quick staff profile switcher for active team members (Excludes Admin)
-  const handleQuickStaffLogin = async (userId: string, targetPath: string) => {
-    try {
-      await switchCurrentUser(userId);
-      router.push(targetPath);
-    } catch {
-      router.push(targetPath);
-    }
-  };
-
   return (
     <div className="w-full max-w-md mx-auto p-4 sm:p-6 font-sans">
       {/* Top Breadcrumb */}
@@ -387,7 +377,7 @@ function LoginForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  placeholder="e.g. emeka@kingsok.com"
+                  placeholder="e.g. staff@kingsok.com"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
                 />
               </div>
@@ -444,41 +434,6 @@ function LoginForm() {
               >
                 New staff member? <span className="font-bold text-emerald-700 underline">Register profile here</span>
               </button>
-            </div>
-
-            {/* Quick Demo Access for Field Workers (Excludes Admin) */}
-            <div className="pt-4 border-t border-slate-100 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                Quick Team Access (Field Staff)
-              </span>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleQuickStaffLogin("u-emeka", "/accommodation/controller")}
-                  className="p-2 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 text-slate-900 text-left transition-colors cursor-pointer"
-                >
-                  <span className="text-[9px] uppercase font-bold text-emerald-800 block">Controller</span>
-                  <span className="font-bold text-xs truncate block">Emeka</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickStaffLogin("u-chioma", "/accommodation/hotliner")}
-                  className="p-2 rounded-xl border border-sky-200 bg-sky-50/60 hover:bg-sky-100 text-slate-900 text-left transition-colors cursor-pointer"
-                >
-                  <span className="text-[9px] uppercase font-bold text-sky-800 block">Hotliner</span>
-                  <span className="font-bold text-xs truncate block">Chioma</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickStaffLogin("u-kalu", "/accommodation/customer-rep")}
-                  className="p-2 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100 text-slate-900 text-left transition-colors cursor-pointer"
-                >
-                  <span className="text-[9px] uppercase font-bold text-amber-800 block">Customer Rep</span>
-                  <span className="font-bold text-xs truncate block">Kalu</span>
-                </button>
-              </div>
             </div>
           </form>
         )}

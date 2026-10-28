@@ -35,12 +35,15 @@ export default function AccommodationNav() {
   }, [pathname]);
 
   const isAdmin = currentUser?.roles.includes("admin");
+  const isController = currentUser?.roles.includes("area_controller");
+  const isHotliner = currentUser?.roles.includes("hotliner");
+  const isCustomerRep = currentUser?.roles.includes("customer_rep");
 
   const navItems = [
     { label: "Overview & Goals", href: "/accommodation", icon: Home },
-    { label: "Area Controller", href: "/accommodation/controller", icon: Building },
-    { label: "Hotliner", href: "/accommodation/hotliner", icon: Radio },
-    { label: "Customer Rep", href: "/accommodation/customer-rep", icon: Headphones },
+    ...(isAdmin || isController ? [{ label: "Area Controller", href: "/accommodation/controller", icon: Building }] : []),
+    ...(isAdmin || isHotliner ? [{ label: "Hotliner", href: "/accommodation/hotliner", icon: Radio }] : []),
+    ...(isAdmin || isCustomerRep ? [{ label: "Customer Rep", href: "/accommodation/customer-rep", icon: Headphones }] : []),
     ...(isAdmin ? [{ label: "Admin Center", href: "/accommodation/admin", icon: ShieldAlert }] : []),
   ];
 
@@ -143,13 +146,15 @@ export default function AccommodationNav() {
               </Link>
             )}
 
-            <Link
-              href="/accommodation/controller"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors shrink-0"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Log Lodge</span>
-            </Link>
+            {(isAdmin || isController) && (
+              <Link
+                href="/accommodation/controller"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors shrink-0"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Log Lodge</span>
+              </Link>
+            )}
           </div>
         </div>
 
