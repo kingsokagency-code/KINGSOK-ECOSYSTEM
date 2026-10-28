@@ -33,10 +33,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Allowed public routes: Ecosystem Home, Accommodation sector workspaces, Contacts Organizer, public CSV data, and auth routes
+  // Allowed public routes: Ecosystem Home, Accommodation sector workspaces, Contacts Organizer, Admissions System, public CSV data, and auth routes
   const isPublicRoute =
     pathname === "/" ||
     pathname.startsWith("/contacts") ||
+    pathname.startsWith("/admissions") ||
     pathname.endsWith(".csv") ||
     pathname.startsWith("/accommodation") ||
     pathname.startsWith("/login") ||

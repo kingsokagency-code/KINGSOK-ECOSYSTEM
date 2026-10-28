@@ -2213,10 +2213,19 @@ export default function ContactsOrganizerPage() {
                       <span className="text-[10px] text-neutral-500">Today</span>
                     </div>
 
-                    {/* Chat Bubble */}
+                    {/* Chat Bubble with Flyer Image */}
                     <div className="flex justify-end">
-                      <div className="max-w-[92%] bg-[#005c4b] text-[#e9edef] rounded-xl rounded-tr-none p-3 shadow-md text-xs leading-relaxed whitespace-pre-wrap font-sans">
-                        {personalizedPreview}
+                      <div className="max-w-[92%] bg-[#005c4b] text-[#e9edef] rounded-xl rounded-tr-none p-2.5 shadow-md text-xs leading-relaxed whitespace-pre-wrap font-sans">
+                        <div className="mb-2 rounded-lg overflow-hidden border border-emerald-500/30 bg-neutral-950">
+                          <img
+                            src="/kingsok_lodge_flyer.jpg"
+                            alt="KINGSOK Accommodations Flyer"
+                            className="w-full h-auto object-cover max-h-72"
+                          />
+                        </div>
+                        <div className="px-1 text-xs leading-relaxed">
+                          {personalizedPreview}
+                        </div>
                         <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-[#8696a0]">
                           <span>11:45 AM</span>
                           <span className="text-sky-400 font-bold">✓✓</span>
@@ -2227,12 +2236,58 @@ export default function ContactsOrganizerPage() {
 
                   {/* Action Buttons */}
                   <div className="space-y-2 pt-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href="/kingsok_lodge_flyer.jpg"
+                        download="KINGSOK_UNN_Accommodations_Flyer.jpg"
+                        className="py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-neutral-700"
+                        title="Download official flyer image to your computer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Download Flyer</span>
+                      </a>
+
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch("/kingsok_lodge_flyer.jpg");
+                            const blob = await res.blob();
+                            const canvas = document.createElement("canvas");
+                            const img = new Image();
+                            img.crossOrigin = "anonymous";
+                            img.src = URL.createObjectURL(blob);
+                            img.onload = async () => {
+                              canvas.width = img.naturalWidth;
+                              canvas.height = img.naturalHeight;
+                              const ctx = canvas.getContext("2d");
+                              ctx?.drawImage(img, 0, 0);
+                              canvas.toBlob(async (pngBlob) => {
+                                if (pngBlob) {
+                                  await navigator.clipboard.write([
+                                    new ClipboardItem({ "image/png": pngBlob })
+                                  ]);
+                                  showToast("Flyer image copied to clipboard! Paste directly into WhatsApp.", "success");
+                                }
+                              }, "image/png");
+                            };
+                          } catch {
+                            showToast("Please use Download Flyer to save image to your device.", "info");
+                          }
+                        }}
+                        className="py-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-emerald-500/40"
+                        title="Copy image to clipboard so you can Ctrl+V paste into WhatsApp"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Copy Flyer Image</span>
+                      </button>
+                    </div>
+
                     <button
                       onClick={handleCopyPersonalizedMessage}
                       className="w-full py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-neutral-700"
                     >
                       <Copy className="w-4 h-4 text-emerald-400" />
-                      <span>Copy Personalized Message to Clipboard</span>
+                      <span>Copy Short Caption to Clipboard</span>
                     </button>
 
                     {previewContact && previewContact.e164Digits ? (

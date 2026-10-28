@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Shield, ArrowLeft, Users, Home, Lock } from "lucide-react";
+import { Shield, ArrowLeft, Users, Home, Lock, GraduationCap } from "lucide-react";
 
 interface ContactsNavProps {
   totalContacts?: number;
@@ -42,6 +42,11 @@ export default function ContactsNav({
             <Link href="/accommodation" className="text-neutral-400 hover:text-white text-xs font-semibold hidden lg:flex items-center gap-1 transition-colors pr-3 border-r border-neutral-800">
               <Home className="w-3.5 h-3.5" />
               <span>Accommodation</span>
+            </Link>
+
+            <Link href="/admissions" className="text-neutral-400 hover:text-white text-xs font-semibold hidden lg:flex items-center gap-1 transition-colors pr-3 border-r border-neutral-800">
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Admissions</span>
             </Link>
 
             <div className="flex items-center gap-2.5">

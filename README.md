@@ -1,6 +1,62 @@
 # KINGSOK Ecosystem & Workforce System
 
-The formation ground and operational platform for **KINGSOK Apex Enterprise Ltd**, featuring the **KINGSOK Contact Organizer & Messaging Assistant** alongside the **Accommodation Sector** and workforce infrastructure.
+The formation ground and operational platform for **KINGSOK Apex Enterprise Ltd**, featuring the **KINGSOK Admission Intelligence System** (UTME & Direct Entry), the **KINGSOK Contact Organizer & Messaging Assistant**, alongside the **Accommodation Sector** and workforce infrastructure.
+
+---
+
+## 🎓 NEW: KINGSOK Admission Intelligence System (UTME & Direct Entry)
+
+An authorized candidate verification and admission processing system built specifically for the University of Nigeria, Nsukka (UNN) admissions pipeline. It supports independent and combined processing for:
+
+1. **UTME / Post-UTME Admissions**
+2. **Direct Entry (DE) Admissions**
+3. **Combined Admissions with Cross-Category Duplicate Auditing**
+
+### 🌟 Key Admission Intelligence Features
+
+1. **Admission Type Selection**
+   - **UTME / Post-UTME**: 100-level undergraduate screening applications.
+   - **Direct Entry (DE)**: 200-level direct entry candidates with prior tertiary qualifications (OND/HND/NCE/A-Levels).
+   - **Combined Results**: Unified view and export retaining each candidate's exact Admission Type.
+
+2. **Verified Portal Workflows & Structural Distinctions**
+   - **UTME Workflow**:
+     - Official Portal: `https://unnportal.unn.edu.ng/putme_application_details`
+     - Login Form: `/putme_login` titled `"ADMISSION SCREENING APPLICATION FORM"`
+     - Input Field: `jambRegNumber` (`id="reg_no"`)
+     - Target Route: `/putme_application_details`
+     - Backend API: `https://schmgrunn.azurewebsites.net/api/PostUtme/load-application-form?regNumber={regNumber}`
+   - **Direct Entry Workflow**:
+     - Official Portal: `https://unnportal.unn.edu.ng/ScrenningApplication.aspx`
+     - Login Form: `/direct_entry_login` titled `"DIRECT ENTRY APPLICATION FORM"`
+     - Input Field: `jambRegNumber` (`id="reg_no"`)
+     - Target Route: `/direct_entry_application/preview` (or `/direct_entry_application`)
+     - Backend API: `https://schmgrunn.azurewebsites.net/api/DirectEntryApplication/load-direct-entry-application-form?regNumber={regNumber}`
+     - *Verified difference*: Direct Entry navigates to `/direct_entry_application/preview` rather than `/putme_application_details`.
+
+3. **Strict Authorized Common Fields Policy**
+   To safeguard student privacy and maintain compliance, only the following 6 authorized fields are gathered:
+   - JAMB Registration Number
+   - Candidate Full Name
+   - Department
+   - Phone Number
+   - Admission Type (`UTME` | `Direct Entry`)
+   - Processing Status (`Success` | `Pending` | `Missing Phone` | `Missing Department` | `Unmatched` | `Flagged for Review` | `Failed`)
+   *No unrelated personal details (e.g. passwords, dates of birth, state of origin) are stored.*
+
+4. **Cross-Category Duplicate Review Engine**
+   - Detects when a JAMB registration number appears in **both** UTME and Direct Entry lists.
+   - **Zero Silent Merging**: Preserves both entries with their respective category, marking them `status = "flagged_review"` for administrative clearance.
+
+5. **Compliant Bulk Retrieval Policy**
+   - Verified that UNN SM Core Portal sits behind Netlify Edge and Azure rate limits. Automated mass scraping without institutional authorization is blocked.
+   - The engine validates official institutional manifests, handles network timeouts gracefully, and throttles lookup requests.
+
+6. **Excel & CSV Export Suite**
+   - Individual **UTME Export** (.csv with UTF-8 BOM for Microsoft Excel)
+   - Individual **Direct Entry Export** (.csv)
+   - Unified **Combined Results Export** with explicit `Admission Type` column on every record
+   - Dedicated **Flagged for Review Audit Export** for quick resolution of duplicate registrations.
 
 ---
 
@@ -79,8 +135,13 @@ Open your browser to:
 - **Contact Organizer & Messaging Assistant:** [http://localhost:3000/contacts](http://localhost:3000/contacts)
 - **KINGSOK Ecosystem Hub:** [http://localhost:3000/](http://localhost:3000/)
 
-### 3. Run the Automated Test Suite
-Execute the 40-check automated verification suite for duplicate detection, Nigerian number normalization, batching, consent filtering, and performance benchmarks:
+### 3. Run the Automated Test Suites
+Execute the Admission Intelligence 41-check verification suite:
+```bash
+npm run test:admissions
+```
+
+Execute the 40-check Contact Organizer verification suite:
 ```bash
 npm run test:contacts
 ```
