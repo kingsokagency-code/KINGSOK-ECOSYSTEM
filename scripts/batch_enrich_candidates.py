@@ -6,9 +6,10 @@ import time
 import os
 import sys
 
-manifest_path = r"c:\Users\USER\Downloads\KINGSOK ECOSYSTEM\public\UNN_2026_2027_Primary_Admission_Manifest.json"
-enriched_csv = r"c:\Users\USER\Downloads\KINGSOK ECOSYSTEM\public\UNN_2026_2027_Primary_Admission_Enriched.csv"
-checkpoint_json = r"c:\Users\USER\Downloads\KINGSOK ECOSYSTEM\public\UNN_2026_2027_Enrichment_Checkpoint.json"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+manifest_path = os.path.join(PROJECT_ROOT, "public", "UNN_2026_2027_Primary_Admission_Manifest.json")
+enriched_csv = os.path.join(PROJECT_ROOT, "public", "UNN_2026_2027_Primary_Admission_Enriched.csv")
+checkpoint_json = os.path.join(PROJECT_ROOT, "public", "UNN_2026_2027_Enrichment_Checkpoint.json")
 
 # Load manifest
 with open(manifest_path, "r", encoding="utf-8") as f:
@@ -72,42 +73,41 @@ def fetch_candidate_portal(reg_no):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# Strategy: Select candidates across all 18 faculties, prioritizing high interest departments
-faculties = sorted(list(set(c.get("faculty") for c in candidates if c.get("faculty"))))
+# Determine target limit
+# If limit is 0 or not passed, target all remaining candidates!
+arg_limit = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 
-# Target candidates to process in this run
-batch_target_limit = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+remaining_targets = [c for c in candidates if c["jambRegNumber"] not in enriched_data]
 
-selected_targets = []
-# Pick evenly across faculties
-per_faculty_quota = max(3, batch_target_limit // len(faculties) + 1)
+if arg_limit > 0:
+    targets_to_run = remaining_targets[:arg_limit]
+else:
+    targets_to_run = remaining_targets
 
-for fac in faculties:
-    fac_candidates = [c for c in candidates if c.get("faculty") == fac and c["jambRegNumber"] not in enriched_data]
-    selected_targets.extend(fac_candidates[:per_faculty_quota])
+total_total = len(candidates)
+already_done = len(enriched_data)
+needed = len(targets_to_run)
 
-# Add high priority courses: Medicine & Surgery, Nursing, Pharmacy, Law, Computer Science, Mechanical Engineering
-priority_depts = ["Medicine and Surgery", "Nursing Sciences", "Pharmacy", "Law", "Computer Science", "Medical Laboratory Science"]
-for p_dept in priority_depts:
-    dept_candidates = [c for c in candidates if p_dept.lower() in (c.get("department") or "").lower() and c["jambRegNumber"] not in enriched_data]
-    selected_targets.extend(dept_candidates[:10])
+print(f"===========================================================")
+print(f"KINGSOK UNN Live Portal Continuous Phone Enrichment Worker")
+print(f"Total primary candidates: {total_total}")
+print(f"Already enriched: {already_done}")
+print(f"Queue for this run: {needed}")
+print(f"===========================================================\n")
 
-# Deduplicate
-seen_reg = set()
-final_targets = []
-for t in selected_targets:
-    if t["jambRegNumber"] not in seen_reg and t["jambRegNumber"] not in enriched_data:
-        seen_reg.add(t["jambRegNumber"])
-        final_targets.append(t)
-    if len(final_targets) >= batch_target_limit:
-        break
-
-print(f"Starting live enrichment for {len(final_targets)} candidate targets (Overall enriched so far: {len(enriched_data)})...")
+def trigger_excel_rebuild():
+    try:
+        from export_to_excel import build_all_workbooks
+        build_all_workbooks()
+        print(">>> [Auto-Export] Excel workbooks updated successfully with latest phone contacts.")
+    except Exception as ex:
+        print(">>> [Auto-Export Note]", ex)
 
 newly_enriched = 0
-for idx, target in enumerate(final_targets):
+for idx, target in enumerate(targets_to_run):
     reg = target["jambRegNumber"]
-    print(f"[{idx+1}/{len(final_targets)}] Reg: {reg} | {target['candidateName']} ({target['department']})...", end=" ", flush=True)
+    curr_overall = len(enriched_data) + 1
+    print(f"[{idx+1}/{needed}] ({curr_overall}/{total_total}) Reg: {reg} | {target['candidateName']} ({target['department']})...", end=" ", flush=True)
     
     res = fetch_candidate_portal(reg)
     if res.get("success"):
@@ -128,9 +128,23 @@ for idx, target in enumerate(final_targets):
         newly_enriched += 1
         print(f"-> PHONE: {phone} (Email: {res.get('email', 'N/A')})")
     elif res.get("error") == "RATE_LIMIT_429":
-        print("-> RATE LIMITED! Pausing 10s...")
-        time.sleep(10)
+        print("-> RATE LIMITED (429)! Backing off for 12s...")
+        time.sleep(12)
     else:
+        # Save placeholder so we know it was checked
+        enriched_data[reg] = {
+            "sn": target["sn"],
+            "jambRegNumber": reg,
+            "candidateName": target["candidateName"],
+            "faculty": target["faculty"],
+            "department": target["department"],
+            "phoneNumber": "Not Listed",
+            "email": "",
+            "state": "",
+            "lga": "",
+            "status": "missing_phone",
+            "dataSource": "authorized_live_integration"
+        }
         print(f"-> {res.get('error')}")
         
     # Checkpoint save every 5 records
@@ -138,45 +152,19 @@ for idx, target in enumerate(final_targets):
         with open(checkpoint_json, "w", encoding="utf-8") as f:
             json.dump(enriched_data, f, indent=2)
             
-    # Respect rate limits
+    # Periodically update Excel workbook every 50 records
+    if (idx + 1) % 50 == 0:
+        trigger_excel_rebuild()
+            
+    # Pacing: 1.2s delay keeps us safely under the 20 requests / 20s rate limit
     time.sleep(1.2)
 
 # Final checkpoint save
 with open(checkpoint_json, "w", encoding="utf-8") as f:
     json.dump(enriched_data, f, indent=2)
 
-# Write enriched CSV
-with open(enriched_csv, "w", newline="", encoding="utf-8-sig") as f:
-    writer = csv.writer(f)
-    writer.writerow([
-        "SN",
-        "JAMB Registration Number",
-        "Candidate Full Name",
-        "Faculty",
-        "Department",
-        "Phone Number",
-        "Email",
-        "State of Origin",
-        "LGA",
-        "Admission Type",
-        "Processing Status",
-        "Data Source"
-    ])
-    for item in enriched_data.values():
-        writer.writerow([
-            item.get("sn", ""),
-            item["jambRegNumber"],
-            item["candidateName"],
-            item.get("faculty", ""),
-            item.get("department", ""),
-            item["phoneNumber"],
-            item.get("email", ""),
-            item.get("state", ""),
-            item.get("lga", ""),
-            "UTME",
-            "VERIFIED",
-            "AUTHORIZED LIVE INTEGRATION"
-        ])
+# Rebuild Excel workbooks
+trigger_excel_rebuild()
 
-print(f"\nBatch completed! Added {newly_enriched} newly verified records.")
-print(f"Total live-verified candidates in registry: {len(enriched_data)}")
+print(f"\nCompleted! Newly verified in this run: {newly_enriched}")
+print(f"Total candidates verified in registry: {len(enriched_data)} / {total_total}")

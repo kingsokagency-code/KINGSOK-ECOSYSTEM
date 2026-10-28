@@ -5,9 +5,10 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-manifest_json = r"c:\Users\USER\Downloads\KINGSOK ECOSYSTEM\public\UNN_2026_2027_Primary_Admission_Manifest.json"
-checkpoint_json = r"c:\Users\USER\Downloads\KINGSOK ECOSYSTEM\public\UNN_2026_2027_Enrichment_Checkpoint.json"
-public_dir = r"c:\Users\USER\Downloads\KINGSOK ECOSYSTEM\public"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+public_dir = os.path.join(PROJECT_ROOT, "public")
+manifest_json = os.path.join(public_dir, "UNN_2026_2027_Primary_Admission_Manifest.json")
+checkpoint_json = os.path.join(public_dir, "UNN_2026_2027_Enrichment_Checkpoint.json")
 artifacts_dir = r"C:\Users\USER\.gemini\antigravity\brain\fe2333b8-6fcc-42f5-b09e-0838199c2703"
 
 output_master_xlsx = os.path.join(public_dir, "UNN_2026_2027_Primary_Admission_List.xlsx")
@@ -147,8 +148,13 @@ def build_all_workbooks():
     wb_single = openpyxl.Workbook()
     ws_single = wb_single.active
     style_full_list_sheet(ws_single, title="All 6,488 Candidates")
-    wb_single.save(output_single_sheet_xlsx)
-    print(f"Saved: {output_single_sheet_xlsx}")
+    try:
+        wb_single.save(output_single_sheet_xlsx)
+        print(f"Saved: {output_single_sheet_xlsx}")
+    except PermissionError:
+        print(f"Warning: {output_single_sheet_xlsx} is open in Excel. Skipping lock.")
+    except Exception as e:
+        print(f"Error saving {output_single_sheet_xlsx}: {e}")
 
     # ------------------------------------------------------------------
     # 2. MASTER 3-SHEET WORKBOOK (SHEET 1 IS ALL 6,488 CANDIDATES)
@@ -299,8 +305,13 @@ def build_all_workbooks():
 
     # Ensure Sheet 1 is active
     wb_master.active = ws_main
-    wb_master.save(output_master_xlsx)
-    print(f"Saved: {output_master_xlsx}")
+    try:
+        wb_master.save(output_master_xlsx)
+        print(f"Saved: {output_master_xlsx}")
+    except PermissionError:
+        print(f"Warning: {output_master_xlsx} is open in Excel. Skipping lock.")
+    except Exception as e:
+        print(f"Error saving {output_master_xlsx}: {e}")
 
     # Copy files to artifacts directory so user can open directly
     for fname in [
