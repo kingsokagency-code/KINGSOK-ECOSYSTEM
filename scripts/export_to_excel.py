@@ -43,7 +43,11 @@ cell_border = Border(left=thin_border_side, right=thin_border_side, top=thin_bor
 zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
 highlight_green = PatternFill(start_color="ECFDF5", end_color="ECFDF5", fill_type="solid")
 
-def style_full_list_sheet(ws, title="All 6,488 Primary Candidates"):
+def style_full_list_sheet(ws, title="All 6,488 Primary Candidates", cand_list=None, enrich_dict=None):
+    if cand_list is None:
+        cand_list = candidates
+    if enrich_dict is None:
+        enrich_dict = enriched_data
     ws.title = title
     ws.views.sheetView[0].showGridLines = True
     
@@ -71,15 +75,15 @@ def style_full_list_sheet(ws, title="All 6,488 Primary Candidates"):
     ws.row_dimensions[1].height = 28
     
     row_num = 2
-    for c in candidates:
+    for c in cand_list:
         reg = c["jambRegNumber"]
-        has_enrich = reg in enriched_data
-        enrich_item = enriched_data.get(reg, {})
+        has_enrich = reg in enrich_dict
+        enrich_item = enrich_dict.get(reg, {})
         
         phone = enrich_item.get("phoneNumber") or ""
         email = enrich_item.get("email") or ""
-        status = "VERIFIED" if has_enrich and phone else "PENDING_PORTAL_LOOKUP"
-        provenance = "AUTHORIZED LIVE INTEGRATION" if has_enrich and phone else "OFFICIAL UNN PRIMARY MANIFEST"
+        status = "VERIFIED" if has_enrich and phone and phone != "Not Listed" else "PENDING_PORTAL_LOOKUP"
+        provenance = "AUTHORIZED LIVE INTEGRATION" if has_enrich and phone and phone != "Not Listed" else "OFFICIAL UNN PRIMARY MANIFEST"
         name = enrich_item.get("candidateName") or c["candidateName"]
         dept = enrich_item.get("department") or c["department"]
         
@@ -140,21 +144,35 @@ def style_full_list_sheet(ws, title="All 6,488 Primary Candidates"):
                 max_len = len(val_str)
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
 
-def build_all_workbooks():
+def build_all_workbooks(custom_enriched=None):
+    if custom_enriched is not None:
+        curr_enriched = custom_enriched
+    else:
+        curr_enriched = {}
+        if os.path.exists(checkpoint_json):
+            try:
+                with open(checkpoint_json, "r", encoding="utf-8") as f:
+                    curr_enriched = json.load(f)
+            except Exception as e:
+                print("Error reading checkpoint in export:", e)
+
     # ------------------------------------------------------------------
     # 1. DEDICATED SINGLE-SHEET WORKBOOK (ALL 6,488 CANDIDATES ON SHEET 1)
     # ------------------------------------------------------------------
     print("Building dedicated single-sheet workbook for all 6,488 candidates...")
     wb_single = openpyxl.Workbook()
     ws_single = wb_single.active
-    style_full_list_sheet(ws_single, title="All 6,488 Candidates")
-    try:
-        wb_single.save(output_single_sheet_xlsx)
-        print(f"Saved: {output_single_sheet_xlsx}")
-    except PermissionError:
-        print(f"Warning: {output_single_sheet_xlsx} is open in Excel. Skipping lock.")
-    except Exception as e:
-        print(f"Error saving {output_single_sheet_xlsx}: {e}")
+    style_full_list_sheet(ws_single, title="All 6,488 Candidates", cand_list=candidates, enrich_dict=curr_enriched)
+    
+    output_updated_xlsx = os.path.join(public_dir, "UNN_2026_2027_Primary_Admission_Updated.xlsx")
+    for out_p in [output_single_sheet_xlsx, output_updated_xlsx]:
+        try:
+            wb_single.save(out_p)
+            print(f"Saved: {out_p}")
+        except PermissionError:
+            print(f"Warning: {out_p} is open in Excel. Skipping lock.")
+        except Exception as e:
+            print(f"Error saving {out_p}: {e}")
 
     # ------------------------------------------------------------------
     # 2. MASTER 3-SHEET WORKBOOK (SHEET 1 IS ALL 6,488 CANDIDATES)
@@ -164,7 +182,7 @@ def build_all_workbooks():
     
     # SHEET 1: ALL 6,488 CANDIDATES
     ws_main = wb_master.active
-    style_full_list_sheet(ws_main, title="All 6,488 Primary Candidates")
+    style_full_list_sheet(ws_main, title="All 6,488 Primary Candidates", cand_list=candidates, enrich_dict=curr_enriched)
     
     # SHEET 2: VERIFIED PHONE CONTACTS ONLY
     ws_enr = wb_master.create_sheet(title="Verified Phone Contacts")
@@ -193,8 +211,10 @@ def build_all_workbooks():
     ws_enr.row_dimensions[1].height = 28
     
     row_num = 2
-    for reg, item in enriched_data.items():
+    for reg, item in curr_enriched.items():
         phone = item.get("phoneNumber") or item.get("mobileNumber") or ""
+        if not phone or phone == "Not Listed":
+            continue
         ws_enr.append([
             row_num - 1,
             item.get("jambRegNumber", reg),
@@ -265,7 +285,8 @@ def build_all_workbooks():
         if key not in dept_map:
             dept_map[key] = {"total": 0, "enriched": 0}
         dept_map[key]["total"] += 1
-        if c["jambRegNumber"] in enriched_data:
+        reg_num = c["jambRegNumber"]
+        if reg_num in curr_enriched and curr_enriched[reg_num].get("phoneNumber") and curr_enriched[reg_num].get("phoneNumber") != "Not Listed":
             dept_map[key]["enriched"] += 1
             
     sorted_depts = sorted(dept_map.keys(), key=lambda k: (k[0], -dept_map[k]["total"]))
