@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Candidate Phone Enrichment
         run: |
-          python scripts/batch_enrich_candidates.py ${{ github.event.inputs.batch_limit || '0' }}
+          python scripts/multi_worker_enrich.py 3
 
       - name: Commit and push updated Excel and checkpoint
         run: |
